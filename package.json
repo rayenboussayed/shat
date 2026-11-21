@@ -26,7 +26,7 @@
     "test-mem": "NODE_OPTIONS=--expose-gc vitest run --project mem",
     "knip": "knip",
     "skills:sync": "nestjs-skills add --agent agents",
-    "root:typecheck": "tsc -b tsconfig.base.json",
+    "root:typecheck": "tsc -p tsconfig.root.json --noEmit",
     "root:lint": "eslint --no-error-on-unmatched-pattern .",
     "root:knip": "knip",
     "root:check": "npm run root:typecheck && npm run root:lint && npm run root:knip && npm run root:test",

@@ -10,6 +10,7 @@ export default tseslint.config(
       "**/coverage/",
       "**/.agent-swarm/**",
       "**/api.d.ts",
+      "**/routeTree.gen.ts",
     ],
   },
 );

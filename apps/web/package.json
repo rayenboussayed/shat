@@ -1,0 +1,33 @@
+{
+  "name": "shat-web",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "npm run typecheck && npm run lint && npm run test",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint src tests --ignore-pattern 'src/routeTree.gen.ts'",
+    "test": "vitest run --config vitest.config.ts",
+    "test-unit": "vitest run --config vitest.config.ts",
+    "build": "vite build",
+    "dev": "vite"
+  },
+  "dependencies": {
+    "@stylexjs/stylex": "0.19.2",
+    "@tanstack/react-router": "1.170.46",
+    "openapi-fetch": "0.17.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "shat-api-types": "*"
+  },
+  "devDependencies": {
+    "@stylexjs/unplugin": "0.19.2",
+    "@tanstack/router-plugin": "1.169.0",
+    "@types/react": "19.3.0",
+    "@types/react-dom": "19.3.0",
+    "@vitejs/plugin-react": "6.3.0",
+    "jsdom": "31.0.1",
+    "typescript": "6.0.3",
+    "vite": "8.3.8",
+    "vitest": "5.1.1"
+  }
+}
