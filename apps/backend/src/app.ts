@@ -1,9 +1,9 @@
 import cors from "@fastify/cors";
 import helmet from "@fastify/helmet";
 import rateLimit from "@fastify/rate-limit";
+import swagger from "@fastify/swagger";
 import { randomUUID } from "node:crypto";
 import Fastify, { LogController } from "fastify";
-import { registerIdentityRoutes } from "./identity.ts";
 
 /** Maps public HTTP status codes to their safe error label and message. */
 export const publicErrors = new Map<number, { error: string; message: string }>([
@@ -81,7 +81,11 @@ export function buildApp() {
     );
   });
 
-  registerIdentityRoutes(app);
+  if (process.env.SHAT_OPENAPI === "1") {
+    app.register(swagger, {
+      openapi: { openapi: "3.1.0", info: { title: "SHAT API", version: "1.0.0" } },
+    });
+  }
 
   return app;
 }
