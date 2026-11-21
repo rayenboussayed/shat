@@ -31,7 +31,7 @@ export class InMemoryKeyProvider implements SecureKeyProvider {
  * Minimal SQLite surface required by the cipher gate.
  */
 export interface SqliteLike {
-  getFirstAsync?<T>(source: string): Promise<T | null>;
+  getFirstAsync?(source: string): Promise<unknown | null>;
   execAsync?(source: string): Promise<unknown>;
   closeAsync?(): Promise<void>;
   close?(): void | Promise<void>;
@@ -88,7 +88,7 @@ function extractCipherVersion(result: unknown): string | undefined {
 export async function verifySqlCipher(db: SqliteLike): Promise<string> {
   let result: unknown;
   if (typeof db.getFirstAsync === "function") {
-    result = await db.getFirstAsync<{ cipher_version?: string }>("PRAGMA cipher_version");
+    result = await db.getFirstAsync("PRAGMA cipher_version");
   } else if (typeof db.execAsync === "function") {
     result = await db.execAsync("PRAGMA cipher_version");
   } else {
