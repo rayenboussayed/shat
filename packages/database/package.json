@@ -1,0 +1,13 @@
+{
+  "name": "shat-database",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "check": "tsc --noEmit -p tsconfig.json",
+    "build": "tsc -p tsconfig.json"
+  },
+  "devDependencies": {
+    "drizzle-orm": "0.45.4",
+    "typescript": "6.0.3"
+  }
+}

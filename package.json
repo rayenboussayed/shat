@@ -2,12 +2,12 @@
   "name": "shat",
   "private": true,
   "type": "module",
+  "workspaces": ["apps/*", "packages/*"],
   "version": "0.0.0",
   "engines": {
     "node": "26.13.1"
   },
   "scripts": {
-    "help": "make help",
     "setup": "npm install --no-audit --no-fund && npm run check",
     "prepare": "husky",
     "check": "npm run root:check && bash scripts/run-in-workspaces.sh check",

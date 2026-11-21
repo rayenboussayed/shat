@@ -78,16 +78,16 @@ build:
 	npm run build
 
 build-backend:
-	bash -c 'cd apps/shat-backend && npm run build'
+	bash -c 'cd apps/backend && npm run build'
 
 build-web:
-	bash -c 'cd apps/shat-web && npm run build'
+	bash -c 'cd apps/web && npm run build'
 
 build-dashboard:
-	bash -c 'cd apps/shat-dashboard && npm run build'
+	bash -c 'cd apps/dashboard && npm run build'
 
 build-mobile:
-	bash -c 'cd apps/shat-mobile && npm run build'
+	bash -c 'cd apps/mobile && npm run build'
 
 db-up:
 	docker compose -f infrastructure/docker/compose.development.yaml up -d postgres

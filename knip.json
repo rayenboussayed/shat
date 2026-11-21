@@ -1,5 +1,1 @@
-{
-  "entry": ["Makefile", "scripts/*.sh"],
-  "project": ["apps/**/*", "packages/**/*", "**/*.ts", "**/*.js", "**/*.mjs"],
-  "ignoreBinaries": ["make"]
-}
+{}
