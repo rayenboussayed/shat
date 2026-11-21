@@ -1,0 +1,8 @@
+.agent-swarm/
+node_modules/
+dist/
+coverage/
+.env
+.env.local
+*.tsbuildinfo
+.husky/_/
