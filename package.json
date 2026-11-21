@@ -23,7 +23,7 @@
     "test-e2e": "vitest run --project e2e",
     "test-cov": "vitest run --project unit --project integration --coverage",
     "test-perf": "vitest bench --config vitest.bench.config.ts",
-    "test-mem": "vitest run --project mem",
+    "test-mem": "NODE_OPTIONS=--expose-gc vitest run --project mem",
     "knip": "knip",
     "skills:sync": "nestjs-skills add --agent agents",
     "root:typecheck": "tsc -b tsconfig.base.json",
