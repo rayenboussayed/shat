@@ -1,5 +1,5 @@
 import { createElement } from "react";
-import { createFileRoute } from "@tanstack/react-router";
+import { Link, createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
 import { api } from "../lib/api.ts";
 import { isGhostModeEnabled } from "../lib/ghost.ts";
@@ -78,6 +78,11 @@ export function IndexComponent() {
           "Ghost Mode: on",
         )
       : null,
+    createElement(
+      "p",
+      null,
+      createElement(Link, { to: "/conversations" }, "Conversations"),
+    ),
   );
 }
 

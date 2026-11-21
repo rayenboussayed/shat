@@ -8,6 +8,7 @@
  * - On reload or navigation away, in-memory content is discarded.
  * - No analytics or telemetry may include message content.
  */
+/** Default value for Ghost Mode (enabled). */
 export const GHOST_MODE_DEFAULT = true;
 
 /** Returns whether Ghost Mode is enabled, defaulting to on. */

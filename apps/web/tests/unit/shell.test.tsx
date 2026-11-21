@@ -2,7 +2,8 @@ import { createElement } from "react";
 import { describe, it, expect, vi, beforeEach } from "vitest";
 import { createRoot } from "react-dom/client";
 import { act } from "react";
-import { IndexComponent } from "../../src/routes/index.tsx";
+import { createMemoryHistory, createRouter, RouterProvider } from "@tanstack/react-router";
+import { routeTree } from "../../src/routeTree.gen.ts";
 
 vi.mock("../../src/lib/api.ts", () => ({
   api: {
@@ -11,6 +12,13 @@ vi.mock("../../src/lib/api.ts", () => ({
 }));
 
 import { api } from "../../src/lib/api.ts";
+
+function createTestRouter() {
+  return createRouter({
+    routeTree,
+    history: createMemoryHistory({ initialEntries: ["/"] }),
+  });
+}
 
 describe("web shell", () => {
   beforeEach(() => {
@@ -25,8 +33,9 @@ describe("web shell", () => {
     const container = document.createElement("div");
     document.body.appendChild(container);
     const root = createRoot(container);
+    const router = createTestRouter();
     await act(async () => {
-      root.render(createElement(IndexComponent));
+      root.render(createElement(RouterProvider, { router }));
     });
     expect(container.textContent).toContain("SHAT");
     root.unmount();
@@ -36,8 +45,9 @@ describe("web shell", () => {
     const container = document.createElement("div");
     document.body.appendChild(container);
     const root = createRoot(container);
+    const router = createTestRouter();
     await act(async () => {
-      root.render(createElement(IndexComponent));
+      root.render(createElement(RouterProvider, { router }));
     });
     await act(async () => {
       await Promise.resolve();
@@ -50,8 +60,9 @@ describe("web shell", () => {
     const container = document.createElement("div");
     document.body.appendChild(container);
     const root = createRoot(container);
+    const router = createTestRouter();
     await act(async () => {
-      root.render(createElement(IndexComponent));
+      root.render(createElement(RouterProvider, { router }));
     });
     expect(
       container.querySelector('[data-testid="ghost-mode"]')?.textContent,
