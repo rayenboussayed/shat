@@ -2,11 +2,14 @@
   "name": "shat-backend",
   "private": true,
   "type": "module",
+  "main": "src/server.ts",
   "scripts": {
+    "start": "node src/server.ts",
     "check": "tsc --noEmit -p tsconfig.json",
     "typecheck": "tsc --noEmit -p tsconfig.json",
     "lint": "eslint",
     "test": "vitest run --root ../../ --config vitest.config.ts --project integration",
+    "test-unit": "vitest run --root ../../ --config vitest.config.ts --project unit",
     "test-integration": "vitest run --root ../../ --config vitest.config.ts --project integration",
     "build": "tsc -p tsconfig.json",
     "gen:migrations": "drizzle-kit generate --config drizzle.config.ts",
@@ -14,6 +17,10 @@
     "db:reset": "drizzle-kit push --force"
   },
   "dependencies": {
+    "@fastify/cors": "11.4.3",
+    "@fastify/helmet": "13.2.0",
+    "@fastify/rate-limit": "11.3.0",
+    "fastify": "5.12.8",
     "pg": "8.23.1"
   },
   "devDependencies": {
