@@ -2,6 +2,9 @@
   "workspaces": {
     "apps/web": {
       "entry": ["src/routes/index.tsx", "src/routes/conversations.tsx"]
+    },
+    "apps/mobile": {
+      "entry": ["src/**/*.ts", "src/**/*.tsx"]
     }
   }
 }

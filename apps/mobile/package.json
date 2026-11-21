@@ -1,0 +1,39 @@
+{
+  "name": "shat-mobile",
+  "private": true,
+  "version": "0.0.0",
+  "main": "index.ts",
+  "scripts": {
+    "start": "expo start",
+    "android": "expo start --android",
+    "ios": "expo start --ios",
+    "web": "expo start --web",
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "lint": "eslint src tests",
+    "test": "vitest run --config vitest.config.ts",
+    "test-unit": "vitest run --config vitest.config.ts",
+    "build": "tsc --noEmit -p tsconfig.json",
+    "check": "npm run typecheck && npm run lint && npm run test"
+  },
+  "dependencies": {
+    "@expo/vector-icons": "15.1.1",
+    "expo": "58.0.26",
+    "expo-dev-client": "~58.0.21",
+    "expo-sqlite": "~58.0.18",
+    "expo-system-ui": "~58.0.7",
+    "expo-updates": "~58.0.22",
+    "openapi-fetch": "0.17.0",
+    "react": "19.3.0",
+    "react-dom": "19.3.0",
+    "react-native": "0.88.1",
+    "react-native-paper": "5.15.5",
+    "react-native-safe-area-context": "5.11.1",
+    "shat-api-types": "*"
+  },
+  "devDependencies": {
+    "@types/react": "19.3.0",
+    "babel-preset-expo": "58.0.26",
+    "typescript": "6.0.3",
+    "vitest": "5.1.1"
+  }
+}
