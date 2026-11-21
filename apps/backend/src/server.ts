@@ -1,4 +1,5 @@
 import { buildApp } from "./app.ts";
+import { closeIdentityDatabase } from "./db/db.ts";
 
 const app = buildApp();
 const port = Number(process.env.PORT ?? 3000);
@@ -22,6 +23,13 @@ async function shutdown(signal: NodeJS.Signals): Promise<void> {
   } catch (error) {
     app.log.error({ err: error }, "Graceful shutdown failed");
     process.exitCode = 1;
+  } finally {
+    try {
+      await closeIdentityDatabase();
+    } catch (error) {
+      app.log.error({ err: error }, "Database shutdown failed");
+      process.exitCode = 1;
+    }
   }
 }
 

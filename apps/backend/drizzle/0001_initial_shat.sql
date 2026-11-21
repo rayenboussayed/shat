@@ -29,7 +29,8 @@ CREATE TABLE "signed_prekeys" (
   "public_key" bytea NOT NULL,
   "signature" bytea NOT NULL,
   "expires_at" timestamptz NOT NULL,
-  "created_at" timestamptz NOT NULL
+  "created_at" timestamptz NOT NULL,
+  CONSTRAINT "signed_prekeys_device_id_unique" UNIQUE ("device_id")
 );
 
 CREATE TABLE "one_time_prekeys" (
@@ -261,7 +262,7 @@ COMMENT ON COLUMN "attachments"."deleted_at" IS 'Purpose=object deletion marker;
 COMMENT ON TABLE "sessions" IS 'Purpose=hashed session authentication state; retention=expiry or revocation cleanup; access=unique token hash and device index; identifies_person=indirect';
 COMMENT ON COLUMN "sessions"."id" IS 'Purpose=session identifier; retention=expiry or revocation cleanup; access=primary key; identifies_person=indirect';
 COMMENT ON COLUMN "sessions"."device_id" IS 'Purpose=session device link; retention=expiry or revocation cleanup; access=sessions_device_revoked_idx; identifies_person=indirect';
-COMMENT ON COLUMN "sessions"."token_hash" IS 'Purpose=non-reversible session token lookup; retention=expiry or revocation cleanup; access=sessions_token_hash_uidx; identifies_person=indirect';
+COMMENT ON COLUMN "sessions"."token_hash" IS 'Purpose=non-reversible session token lookup; retention=expiry or revocation cleanup; access=sessions_token_hash_unique; identifies_person=indirect';
 COMMENT ON COLUMN "sessions"."created_at" IS 'Purpose=session creation time; retention=expiry or revocation cleanup; access=device index; identifies_person=indirect';
 COMMENT ON COLUMN "sessions"."expires_at" IS 'Purpose=session expiry deadline; retention=purge after expiry; access=session row; identifies_person=no';
 COMMENT ON COLUMN "sessions"."last_used_at" IS 'Purpose=last authenticated use; retention=expiry or revocation cleanup; access=session row; identifies_person=indirect';

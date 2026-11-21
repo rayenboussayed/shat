@@ -3,6 +3,7 @@ import helmet from "@fastify/helmet";
 import rateLimit from "@fastify/rate-limit";
 import { randomUUID } from "node:crypto";
 import Fastify, { LogController, type FastifyError } from "fastify";
+import { registerIdentityRoutes } from "./identity.ts";
 
 const healthResponseSchema = {
   type: "object",
@@ -136,6 +137,8 @@ export function buildApp() {
     },
     async () => ({ status: "ok" }),
   );
+
+  registerIdentityRoutes(app);
 
   return app;
 }

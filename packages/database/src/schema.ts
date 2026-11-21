@@ -69,6 +69,7 @@ export const signedPrekeys = pgTable(
     createdAt: timestamp("created_at", { withTimezone: true }).notNull(),
   },
   (table) => [
+    unique("signed_prekeys_device_id_unique").on(table.deviceId),
     index("signed_prekeys_device_expiry_created_idx").on(
       table.deviceId,
       table.expiresAt.desc(),
