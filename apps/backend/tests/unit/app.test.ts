@@ -1,13 +1,17 @@
-import type { FastifyInstance } from "fastify";
+import type { NestFastifyApplication } from "@nestjs/platform-fastify";
+import { Test } from "@nestjs/testing";
+import { FastifyAdapter } from "@nestjs/platform-fastify";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
 import { buildApp } from "../../src/app.js";
+import { AppModule } from "../../src/app.module.js";
 
 describe("Fastify application", () => {
-  let app: FastifyInstance;
+  let app: NestFastifyApplication;
 
   beforeAll(async () => {
-    app = buildApp();
-    await app.ready();
+    const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    app = moduleRef.createNestApplication(new FastifyAdapter(buildApp()));
+    await app.init();
   });
 
   afterAll(async () => {
@@ -46,5 +50,15 @@ describe("Fastify application", () => {
     });
 
     expect(response.headers["x-request-id"]).not.toBe("caller-controlled");
+  });
+
+  it("returns 400 for an invalid body before 401 on an identity route", async () => {
+    const response = await app.inject({
+      method: "POST",
+      url: "/identity/devices",
+      payload: {},
+    });
+
+    expect(response.statusCode).toBe(400);
   });
 });

@@ -3,7 +3,7 @@ import { once } from "node:events";
 import net from "node:net";
 import { describe, expect, it } from "vitest";
 
-const serverEntry = new URL("../../src/server.ts", import.meta.url);
+const serverEntry = new URL("../../dist/apps/backend/src/main.js", import.meta.url);
 
 function freePort(): Promise<number> {
   return new Promise((resolve, reject) => {
