@@ -22,6 +22,7 @@
     "test-perf": "vitest bench --config vitest.bench.config.ts",
     "test-mem": "vitest run --project mem",
     "knip": "knip",
+    "skills:sync": "nestjs-skills add --agent agents",
     "root:typecheck": "tsc -b tsconfig.base.json",
     "root:lint": "eslint --no-error-on-unmatched-pattern .",
     "root:knip": "knip",
@@ -47,6 +48,7 @@
   "devDependencies": {
     "@commitlint/cli": "21.2.4",
     "@commitlint/config-conventional": "21.2.4",
+    "@nestjs/skills": "0.1.1",
     "eslint": "10.15.0",
     "husky": "9.1.7",
     "knip": "6.47.0",
