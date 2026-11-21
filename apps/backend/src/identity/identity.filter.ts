@@ -4,23 +4,29 @@ import type { FastifyReply, FastifyRequest } from "fastify";
 import { AllExceptionsFilter, codeOf, statusOf } from "../app.filter.ts";
 import { publicErrors } from "../app.ts";
 
-/** True when the request path belongs to the identity or prekey API. */
-function isIdentityPath(path: string): boolean {
+/** True when the request path belongs to a public (no-requestId) route. */
+function isPublicPath(path: string): boolean {
   return (
     path === "/identity" ||
     path.startsWith("/identity/") ||
     path === "/prekeys" ||
-    path.startsWith("/prekeys/")
+    path.startsWith("/prekeys/") ||
+    path === "/conversations" ||
+    path.startsWith("/conversations/") ||
+    path === "/mailbox" ||
+    path.startsWith("/mailbox/") ||
+    path === "/delivery" ||
+    path.startsWith("/delivery/")
   );
 }
 
-/** Exception filter that keeps identity errors free of requestId. */
+/** Exception filter that keeps public route errors free of requestId. */
 @Catch()
 @Injectable()
-export class IdentityExceptionsFilter extends AllExceptionsFilter {
+export class PublicRoutesExceptionsFilter extends AllExceptionsFilter {
   /**
-   * Sends an identity error without requestId, or delegates other paths to the
-   * global filter.
+   * Sends an error without requestId for public routes, or delegates other
+   * paths to the global filter.
    *
    * @param exception - The thrown value.
    * @param host - Nest's argument host for the current request.
@@ -31,7 +37,7 @@ export class IdentityExceptionsFilter extends AllExceptionsFilter {
     const reply = context.getResponse<FastifyReply>();
 
     const path = request.url.split("?")[0] ?? "";
-    if (!isIdentityPath(path)) {
+    if (!isPublicPath(path)) {
       super.catch(exception, host);
       return;
     }
