@@ -1,3 +1,6 @@
+import type { NestFastifyApplication } from "@nestjs/platform-fastify";
+import { Test } from "@nestjs/testing";
+import { FastifyAdapter } from "@nestjs/platform-fastify";
 import { createHash, randomBytes, randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { Pool, type PoolClient } from "pg";
@@ -13,7 +16,7 @@ const recipientDeviceId = randomUUID();
 const revokedDeviceId = randomUUID();
 
 describe("Identity and prekey routes", () => {
-  let app: Awaited<ReturnType<typeof import("../../src/app.js").buildApp>>;
+  let app: NestFastifyApplication;
   let adminPool: Pool | undefined;
   let client: PoolClient | undefined;
   let schemaName: string | undefined;
@@ -53,8 +56,10 @@ describe("Identity and prekey routes", () => {
     }
 
     const { buildApp } = await import("../../src/app.js");
-    app = buildApp();
-    await app.ready();
+    const { AppModule } = await import("../../src/app.module.js");
+    const moduleRef = await Test.createTestingModule({ imports: [AppModule] }).compile();
+    app = moduleRef.createNestApplication(new FastifyAdapter(buildApp()));
+    await app.init();
 
     if (client) {
       await client.query(
@@ -129,6 +134,23 @@ describe("Identity and prekey routes", () => {
       restoreEnvironmentVariable("SHAT_ENROLLMENT_TOKEN", originalSecret);
       restoreEnvironmentVariable("SHAT_ENROLLMENT_USER_ID", originalUserId);
     }
+  });
+
+  it("preserves the identity error envelope without requestId", async () => {
+    const identityResponse = await app.inject({
+      method: "POST",
+      url: "/identity/devices",
+      payload: {},
+    });
+    const globalResponse = await app.inject({
+      method: "GET",
+      url: "/missing",
+    });
+
+    expect(identityResponse.statusCode).toBe(400);
+    expect(identityResponse.json()).not.toHaveProperty("requestId");
+    expect(globalResponse.statusCode).toBe(404);
+    expect(globalResponse.json()).toHaveProperty("requestId");
   });
 
   describe.skipIf(!databaseUrl)("database-backed identity and prekey routes", () => {

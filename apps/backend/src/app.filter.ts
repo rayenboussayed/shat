@@ -4,7 +4,7 @@ import type { FastifyReply, FastifyRequest } from "fastify";
 import { publicErrors } from "./app.ts";
 
 /** Extracts a numeric HTTP status from an exception when one is present. */
-function statusOf(exception: unknown): number | undefined {
+export function statusOf(exception: unknown): number | undefined {
   if (exception instanceof HttpException) {
     return exception.getStatus();
   }
@@ -18,7 +18,7 @@ function statusOf(exception: unknown): number | undefined {
 }
 
 /** Extracts a Fastify error code from an exception when one is present. */
-function codeOf(exception: unknown): string {
+export function codeOf(exception: unknown): string {
   if (typeof exception === "object" && exception !== null && "code" in exception) {
     const value: unknown = exception.code;
     if (typeof value === "string") {
