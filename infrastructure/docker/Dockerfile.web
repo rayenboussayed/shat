@@ -1,0 +1,53 @@
+# syntax=docker/dockerfile:1
+# SHAT web SPA. Pinned by digest: node:26.13.1-bookworm-slim and nginx:alpine.
+ARG NODE_IMAGE=node:26.13.1-bookworm-slim@sha256:5df79989ed685e09f0a98019db4cebfb22fb9df1a53c0161664a011f7ff6b0f1
+ARG NGINX_IMAGE=nginx:alpine@sha256:fb4658584bd9a916ffb6f6e365f97c25cfdb2923801f551ea08356e695f14ff7
+
+FROM ${NODE_IMAGE} AS deps
+WORKDIR /app
+COPY package.json package-lock.json ./
+# Workspace manifests only: this layer is reused until dependencies change.
+COPY apps/backend/package.json ./apps/backend/
+COPY apps/dashboard/package.json ./apps/dashboard/
+COPY apps/mobile/package.json ./apps/mobile/
+COPY apps/web/package.json ./apps/web/
+COPY packages/api-types/package.json ./packages/api-types/
+COPY packages/database/package.json ./packages/database/
+RUN npm ci --no-audit --no-fund
+
+FROM ${NODE_IMAGE} AS build
+WORKDIR /app
+COPY --from=deps /app/node_modules ./node_modules
+COPY package.json package-lock.json ./
+COPY tsconfig*.json ./
+COPY apps ./apps
+COPY packages ./packages
+ARG VITE_API_BASE_URL=http://localhost:3000
+ENV VITE_API_BASE_URL=${VITE_API_BASE_URL}
+RUN npm run build -w apps/web
+
+FROM ${NODE_IMAGE} AS development
+WORKDIR /app
+ENV NODE_ENV=development
+COPY --from=deps /app/node_modules ./node_modules
+COPY . .
+EXPOSE 5173
+CMD ["npm", "run", "dev", "-w", "apps/web", "--", "--host", "0.0.0.0"]
+
+# nginx (alpine, pinned by digest) with a custom config on 8080 under uid
+# 101:101; the official unprivileged image would add a second base image.
+FROM ${NGINX_IMAGE} AS runtime
+COPY infrastructure/docker/nginx.conf /etc/nginx/nginx.conf
+COPY --from=build /app/apps/web/dist /usr/share/nginx/html
+RUN mkdir -p /tmp/nginx \
+ && chown -R 101:101 /tmp/nginx /usr/share/nginx/html
+USER 101:101
+EXPOSE 8080
+HEALTHCHECK --interval=30s --timeout=5s --start-period=5s --retries=3 \
+  CMD ["wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/"]
+LABEL org.opencontainers.image.title="SHAT web" \
+      org.opencontainers.image.description="Static SHAT web SPA served by nginx" \
+      org.opencontainers.image.source="https://github.com/rayenboussayed/shat" \
+      org.opencontainers.image.vendor="SHAT" \
+      org.opencontainers.image.licenses="UNLICENSED"
+CMD ["nginx", "-g", "daemon off;"]

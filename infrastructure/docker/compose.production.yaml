@@ -1,0 +1,109 @@
+# SHAT production stack: built artifacts only, no bind mounts.
+#
+# Images are tagged from SHAT_IMAGE_TAG, which must be a *tag* (for example an
+# immutable commit SHA); a full digest after ':' is not a valid image reference.
+# SHAT_REGISTRY is an optional registry namespace prefix (include the trailing
+# slash, e.g. registry.example.com/shat/); 2ae5e8f is only a local default.
+# Secrets come from the deploy environment via ${VAR:-}; nothing is baked into
+# an image or this file. Empty values make the backend fail closed.
+# DinD forwards only 31000-31099: backend 31004:3000, web 31005:8080,
+# dashboard 31006:8080. Terminate TLS and map real ports in the reverse proxy.
+
+name: shat-prod
+
+services:
+  postgres:
+    image: postgres:16-alpine@sha256:1d5b02d3a9941fbd52437db4107f8c52d6297dac553ca1e5c299ebb3756b4857
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-shat}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-}
+      POSTGRES_DB: ${POSTGRES_DB:-shat}
+    volumes:
+      - shat-postgres-prod:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U ${POSTGRES_USER:-shat} -d ${POSTGRES_DB:-shat}"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+      start_period: 10s
+    restart: unless-stopped
+
+  backend:
+    image: ${SHAT_REGISTRY:-}shat-backend:${SHAT_IMAGE_TAG:-2ae5e8f}
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/Dockerfile
+      target: runtime
+    environment:
+      NODE_ENV: production
+      PORT: "${PORT:-3000}"
+      DATABASE_URL: ${DATABASE_URL:-postgres://shat:${POSTGRES_PASSWORD:-}@postgres:5432/${POSTGRES_DB:-shat}}
+      CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:31005,http://localhost:31006}
+      SHAT_ENROLLMENT_TOKEN: ${SHAT_ENROLLMENT_TOKEN:-}
+      SHAT_ENROLLMENT_USER_ID: ${SHAT_ENROLLMENT_USER_ID:-00000000-0000-4000-8000-000000000000}
+      TURN_SECRET: ${TURN_SECRET:-}
+      TURN_URIS: ${TURN_URIS:-turn:localhost:3478}
+      SHAT_ADMIN_TOKEN: ${SHAT_ADMIN_TOKEN:-}
+      EXPO_PUBLIC_API_BASE_URL: ${EXPO_PUBLIC_API_BASE_URL:-http://localhost:31004}
+      VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:31004}
+    ports:
+      - "31004:${PORT:-3000}"
+    depends_on:
+      postgres:
+        condition: service_healthy
+    healthcheck:
+      test:
+        - CMD
+        - node
+        - -e
+        - "fetch('http://127.0.0.1:${PORT:-3000}/health').then(r=>process.exit(r.ok?0:1)).catch(()=>process.exit(1))"
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 15s
+    restart: unless-stopped
+
+  web:
+    image: ${SHAT_REGISTRY:-}shat-web:${SHAT_IMAGE_TAG:-2ae5e8f}
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/Dockerfile.web
+      target: runtime
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:31004}
+    ports:
+      - "31005:8080"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    restart: unless-stopped
+
+  dashboard:
+    image: ${SHAT_REGISTRY:-}shat-dashboard:${SHAT_IMAGE_TAG:-2ae5e8f}
+    build:
+      context: ../..
+      dockerfile: infrastructure/docker/Dockerfile.dashboard
+      target: runtime
+      args:
+        VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:31004}
+    ports:
+      - "31006:8080"
+    depends_on:
+      backend:
+        condition: service_healthy
+    healthcheck:
+      test: ["CMD", "wget", "-q", "-O", "/dev/null", "http://127.0.0.1:8080/"]
+      interval: 30s
+      timeout: 5s
+      retries: 3
+      start_period: 5s
+    restart: unless-stopped
+
+volumes:
+  shat-postgres-prod: null

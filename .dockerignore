@@ -1,0 +1,17 @@
+# Build context hygiene: never send generated output, secrets or scratch space.
+**/node_modules
+**/dist
+**/coverage
+**/.env
+**/.env.*
+.git
+.agent-swarm
+**/*.tsbuildinfo
+var
+docs
+
+# Tests are not needed for a production build or for the dev watcher image.
+apps/**/tests
+packages/**/tests
+**/*.test.ts
+**/*.spec.ts

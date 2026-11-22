@@ -123,6 +123,7 @@ health:
 
 compose-config:
 	docker compose -f infrastructure/docker/compose.development.yaml config > /dev/null
+	docker compose -f infrastructure/docker/compose.production.yaml config > /dev/null
 
 docker-build:
 	docker compose -f infrastructure/docker/compose.production.yaml build
