@@ -5,8 +5,9 @@ React + TypeScript operations shell for the SHAT backend.
 ## Status
 
 - Health indicator queries `GET /health` through the typed `shat-api-types` client.
-- Operations metrics panel is an honest placeholder: the backend exposes no
-  telemetry endpoints yet, so no statistics are fabricated.
+- Operations metrics panel is an honest placeholder: live telemetry is not
+  wired into this dashboard yet. The backend exposes `GET /telemetry/summary`,
+  but this UI does not consume it, so no statistics are fabricated.
 - Backend route list is derived from the generated OpenAPI `paths` type.
 
 ## Security

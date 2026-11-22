@@ -68,14 +68,19 @@ export function IndexComponent() {
     createElement("h1", { ...stylex.props(styles.title) }, "SHAT"),
     createElement(
       "p",
-      { ...stylex.props(styles.status), "data-testid": "health-status" },
+      {
+        ...stylex.props(styles.status),
+        "data-testid": "health-status",
+        role: "status",
+        "aria-live": "polite",
+      },
       `Health: ${health}`,
     ),
     ghostMode
       ? createElement(
           "p",
           { ...stylex.props(styles.ghost), "data-testid": "ghost-mode" },
-          "Ghost Mode: on",
+          "Ghost Mode: on (local storage only)",
         )
       : null,
     createElement(

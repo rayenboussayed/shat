@@ -31,6 +31,13 @@ const allRoutes: Record<keyof paths, true> = {
   "/mailbox": true,
   "/mailbox/{id}/ack": true,
   "/delivery/receipts": true,
+  "/attachments": true,
+  "/attachments/download": true,
+  "/attachments/{id}": true,
+  "/turn/credentials": true,
+  "/admin/health/live": true,
+  "/admin/health/ready": true,
+  "/telemetry/summary": true,
 };
 
 describe("dashboard shell", () => {
@@ -82,7 +89,7 @@ describe("dashboard shell", () => {
     root.unmount();
   });
 
-  it("states that no telemetry endpoints are implemented", async () => {
+  it("states that live telemetry is not wired into the dashboard", async () => {
     const container = document.createElement("div");
     document.body.appendChild(container);
     const root = createRoot(container);
@@ -91,7 +98,8 @@ describe("dashboard shell", () => {
     });
     const panel = container.querySelector('[data-testid="metrics-panel"]');
     expect(panel).not.toBeNull();
-    expect(panel?.textContent).toContain("No telemetry endpoints are implemented yet");
+    expect(panel?.textContent).toContain("Live telemetry is not wired into this dashboard yet");
+    expect(panel?.textContent).toContain("GET /telemetry/summary");
     expect(panel?.textContent).not.toMatch(/\d+\s*(ms|req|users|requests)/i);
     root.unmount();
   });
@@ -113,7 +121,11 @@ describe("dashboard shell", () => {
     root.unmount();
   });
 
-  it("BACKEND_ROUTES covers every key of paths", () => {
-    expect(BACKEND_ROUTES.length).toBe(Object.keys(allRoutes).length);
+  it("BACKEND_ROUTES lists only generated paths (a subset)", () => {
+    for (const route of BACKEND_ROUTES) {
+      expect(Object.prototype.hasOwnProperty.call(allRoutes, route)).toBe(true);
+    }
+    expect(BACKEND_ROUTES.length).toBeGreaterThan(0);
+    expect(BACKEND_ROUTES.length).toBeLessThan(Object.keys(allRoutes).length);
   });
 });

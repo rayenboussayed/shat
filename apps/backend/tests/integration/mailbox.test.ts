@@ -159,6 +159,47 @@ describe("Mailbox routes", () => {
     expect(second.statusCode).toBe(200);
   });
 
+  it.skipIf(!databaseUrl)("upgrades a delivered receipt to read without downgrading", async () => {
+    const submitted = await app.inject({
+      method: "POST",
+      url: "/mailbox",
+      headers: { authorization: `Bearer ${actorToken}` },
+      payload: {
+        recipientDeviceId,
+        envelope: Buffer.alloc(8, 3).toString("base64"),
+        expiry: new Date(Date.now() + 60_000).toISOString(),
+      },
+    });
+    expect(submitted.statusCode).toBe(201);
+    const messageId = submitted.json<{ messageId: string }>().messageId;
+    const ack = (state: string) =>
+      app.inject({
+        method: "POST",
+        url: `/mailbox/${messageId}/ack`,
+        headers: { authorization: `Bearer ${recipientToken}` },
+        payload: { state },
+      });
+
+    const delivered = await ack("delivered");
+    const read = await ack("read");
+    const noDowngrade = await ack("delivered");
+
+    expect(delivered.statusCode).toBe(200);
+    expect(read.statusCode).toBe(200);
+    expect(noDowngrade.statusCode).toBe(200);
+    const deliveredReceipt = delivered.json<{ receipt: { id: string; state: string; receiptAt: string } }>().receipt;
+    const readReceipt = read.json<{ receipt: { id: string; state: string; receiptAt: string } }>().receipt;
+    expect(deliveredReceipt.state).toBe("delivered");
+    expect(readReceipt).toMatchObject({ id: deliveredReceipt.id, state: "read" });
+    expect(Date.parse(readReceipt.receiptAt)).toBeGreaterThanOrEqual(Date.parse(deliveredReceipt.receiptAt));
+    expect(noDowngrade.json<{ receipt: { state: string } }>().receipt.state).toBe("read");
+
+    if (client) {
+      const { rows } = await client.query(`SELECT state FROM delivery_receipts WHERE message_id = $1`, [messageId]);
+      expect(rows[0]?.state).toBe("read");
+    }
+  });
+
   it.skipIf(!databaseUrl)("lists delivery receipts for the sender", async () => {
     const response = await app.inject({
       method: "GET",

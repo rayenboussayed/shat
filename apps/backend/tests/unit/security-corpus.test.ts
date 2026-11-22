@@ -10,6 +10,7 @@ import { DatabaseService } from "../../src/db/db.js";
 import { AuthService } from "../../src/identity/auth.service.js";
 
 const validToken = randomBytes(32).toString("base64url");
+const enrollmentToken = randomBytes(32).toString("base64url");
 const validDeviceId = randomUUID();
 const validUserId = randomUUID();
 const validSessionId = randomUUID();
@@ -110,7 +111,7 @@ describe("Security corpus (SHAT §19.2, no database)", () => {
       const response = await app.inject({
         method: "POST",
         url: "/identity/devices",
-        headers: { "x-enrollment-token": "secret" },
+        headers: { "x-enrollment-token": enrollmentToken },
         payload: { deviceId: randomUUID(), userId: randomUUID() },
       });
       expect(response.statusCode).toBe(503);
@@ -123,13 +124,13 @@ describe("Security corpus (SHAT §19.2, no database)", () => {
   it("returns 503 when SHAT_ENROLLMENT_USER_ID is missing", async () => {
     const originalToken = process.env.SHAT_ENROLLMENT_TOKEN;
     const originalUser = process.env.SHAT_ENROLLMENT_USER_ID;
-    process.env.SHAT_ENROLLMENT_TOKEN = "secret";
+    process.env.SHAT_ENROLLMENT_TOKEN = enrollmentToken;
     delete process.env.SHAT_ENROLLMENT_USER_ID;
     try {
       const response = await app.inject({
         method: "POST",
         url: "/identity/devices",
-        headers: { "x-enrollment-token": "secret" },
+        headers: { "x-enrollment-token": enrollmentToken },
         payload: { deviceId: randomUUID(), userId: randomUUID() },
       });
       expect(response.statusCode).toBe(503);
@@ -143,13 +144,13 @@ describe("Security corpus (SHAT §19.2, no database)", () => {
     const originalToken = process.env.SHAT_ENROLLMENT_TOKEN;
     const originalUser = process.env.SHAT_ENROLLMENT_USER_ID;
     const enrollmentUserId = randomUUID();
-    process.env.SHAT_ENROLLMENT_TOKEN = "secret";
+    process.env.SHAT_ENROLLMENT_TOKEN = enrollmentToken;
     process.env.SHAT_ENROLLMENT_USER_ID = enrollmentUserId;
     try {
       const response = await app.inject({
         method: "POST",
         url: "/identity/devices",
-        headers: { "x-enrollment-token": "secret" },
+        headers: { "x-enrollment-token": enrollmentToken },
         payload: {
           deviceId: randomUUID(),
           userId: enrollmentUserId,

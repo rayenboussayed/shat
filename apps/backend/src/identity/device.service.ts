@@ -8,6 +8,7 @@ import {
   isNull,
 } from "drizzle-orm";
 import { DatabaseService } from "../db/db.ts";
+import { readSecretEnv } from "../admin/env-secret.ts";
 import {
   devices,
   deviceIdentityKeys,
@@ -47,7 +48,7 @@ export class DeviceService {
 
   /** Creates a device for the configured bootstrap account. */
   async createDevice(body: DeviceBody, headers: SessionHeaders): Promise<IdentityResult> {
-    const enrollmentToken = process.env.SHAT_ENROLLMENT_TOKEN;
+    const enrollmentToken = readSecretEnv(process.env, "SHAT_ENROLLMENT_TOKEN", 32);
     const enrollmentUserId = process.env.SHAT_ENROLLMENT_USER_ID;
     if (!enrollmentToken || !enrollmentUserId) {
       return { status: 503, body: publicError(503) };

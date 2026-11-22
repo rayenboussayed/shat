@@ -48,8 +48,8 @@ carry secrets, must run as non-root, and must be rebuildable from pinned bases.
 - Base images are pinned with tag **and** digest
   (`node:26.13.1-bookworm-slim@sha256:…`, `nginx:alpine@sha256:…`,
   `postgres:16-alpine@sha256:…`) and every postgres volume is named. The digest
-  is the authoritative identifier; tag-to-digest correspondence was not
-  verified in this environment.
+  is the authoritative identifier. Tag-to-digest pairs were verified via the
+  Docker Hub tag API on 2026-11-22; a stale postgres digest was corrected.
 - Secrets are `${VAR:-}` environment substitutions with empty defaults: builds
   and `config` work offline, while runtime secret validation fails closed until
   the deploy environment supplies real values. No secret is in a layer.
@@ -76,8 +76,8 @@ here only; it was not exercised in the verification environment.
   (docs.docker.com/llms.txt; build/ multi-stage and compose file reference).
 - Files: `infrastructure/docker/{Dockerfile,Dockerfile.web,Dockerfile.dashboard,
   nginx.conf,compose.development.yaml,compose.production.yaml}`, `.dockerignore`.
-- The tag↔digest correspondence of the pinned base images was not verified here;
-  the digests are used as written and should be re-checked before a real deploy.
+- The pinned base-image tag↔digest pairs were verified via the Docker Hub tag
+  API on 2026-11-22; re-check them before a real deploy because tags move.
 
 ## Revisit trigger
 - A second backend instance or a shared metrics store is introduced.

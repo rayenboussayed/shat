@@ -10,6 +10,53 @@ const RATE_LIMIT_WINDOW_MS = 60 * 1000;
 /** Most event ids remembered by one server instance before new events are refused. */
 export const REPLAY_GUARD_CAPACITY = 10_000;
 
+/** Most failed authentication handshakes accepted before new ones are refused. */
+export const MAX_FAILED_AUTH_ATTEMPTS = 50;
+
+/** Window over which failed authentication handshakes are counted. */
+const FAILED_AUTH_WINDOW_MS = 10 * 1000;
+
+/**
+ * Bounded, sliding-window counter for failed signaling handshakes.
+ *
+ * Caps how many authentication (database) lookups bogus-token clients may trigger
+ * in one window, so a connect flood cannot exhaust the database pool. Once the
+ * window is full, new handshakes are refused until old failures age out. State is
+ * in memory and per process, and never holds more than MAX_FAILED_AUTH_ATTEMPTS
+ * timestamps.
+ */
+export class FailedAuthLimiter {
+  private readonly failures: number[] = [];
+
+  /**
+   * Reports whether this window already holds its quota of failures.
+   *
+   * @param now - The server clock in milliseconds.
+   * @returns True when new authentication attempts should be refused.
+   */
+  isFull(now: number): boolean {
+    this.prune(now);
+    return this.failures.length >= MAX_FAILED_AUTH_ATTEMPTS;
+  }
+
+  /**
+   * Records one failed authentication attempt.
+   *
+   * @param now - The server clock in milliseconds.
+   */
+  record(now: number): void {
+    this.failures.push(now);
+  }
+
+  /** Drops failures older than the window. */
+  private prune(now: number): void {
+    const cutoff = now - FAILED_AUTH_WINDOW_MS;
+    while (this.failures.length > 0 && (this.failures[0] ?? 0) <= cutoff) {
+      this.failures.shift();
+    }
+  }
+}
+
 /** Sliding-window event limiter for one connection. */
 export class ConnectionRateLimiter {
   private readonly timestamps: number[] = [];

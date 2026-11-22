@@ -179,6 +179,34 @@ describe("Mailbox and conversation routes (DB-free)", () => {
     expect(response.statusCode).toBe(400);
   });
 
+  it("rejects mailboxes with an already-expired or far-future expiry", async () => {
+    const expired = await app.inject({
+      method: "POST",
+      url: "/mailbox",
+      headers: { authorization: `Bearer ${validToken}` },
+      payload: {
+        recipientDeviceId,
+        envelope: Buffer.alloc(4).toString("base64"),
+        expiry: new Date(Date.now() - 1000).toISOString(),
+      },
+    });
+    const farFuture = await app.inject({
+      method: "POST",
+      url: "/mailbox",
+      headers: { authorization: `Bearer ${validToken}` },
+      payload: {
+        recipientDeviceId,
+        envelope: Buffer.alloc(4).toString("base64"),
+        expiry: new Date(Date.now() + 31 * 24 * 60 * 60 * 1000).toISOString(),
+      },
+    });
+
+    expect(expired.statusCode).toBe(400);
+    expect(expired.json()).toMatchObject({ message: "The expiry is invalid" });
+    expect(farFuture.statusCode).toBe(400);
+    expect(farFuture.json()).toMatchObject({ message: "The expiry is invalid" });
+  });
+
   it("submits a mailbox envelope when authenticated", async () => {
     const response = await app.inject({
       method: "POST",

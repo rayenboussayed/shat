@@ -2,6 +2,9 @@
  * Ghost Mode controller for the mobile app.
  */
 
+/** Upper bound on buffered messages per conversation; oldest are dropped first. */
+export const MAX_MESSAGES_PER_CONVERSATION = 1000;
+
 export interface GhostMessage {
   readonly id: string;
   readonly conversationId: string;
@@ -61,7 +64,10 @@ export class GhostModeController {
 
   /**
    * Buffers message content in volatile memory only while Ghost Mode is
-   * enabled. When disabled, the content is not retained.
+   * enabled. When disabled, the content is not retained. The buffer is capped
+   * at {@link MAX_MESSAGES_PER_CONVERSATION} entries per conversation; once
+   * full, the oldest message is dropped so a long session cannot grow without
+   * bound.
    */
   store(conversationId: string, content: string, id?: string): GhostMessage {
     const message: GhostMessage = {
@@ -72,7 +78,12 @@ export class GhostModeController {
     };
     if (this.enabled) {
       const existing = this.buffer.get(conversationId) ?? [];
-      this.buffer.set(conversationId, [...existing, message]);
+      const appended = [...existing, message];
+      const bounded =
+        appended.length > MAX_MESSAGES_PER_CONVERSATION
+          ? appended.slice(appended.length - MAX_MESSAGES_PER_CONVERSATION)
+          : appended;
+      this.buffer.set(conversationId, bounded);
     }
     return message;
   }

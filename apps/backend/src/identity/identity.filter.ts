@@ -59,10 +59,7 @@ export class PublicRoutesExceptionsFilter extends AllExceptionsFilter {
     } else {
       const publicError = publicErrors.get(statusCode);
       body.error = publicError?.error ?? "Bad Request";
-      body.message =
-        exception instanceof Error && exception.message
-          ? exception.message
-          : (publicError?.message ?? "The request could not be completed");
+      body.message = publicError?.message ?? "The request could not be completed";
       const code = codeOf(exception);
       if (code !== "INTERNAL_ERROR") {
         body.code = code;

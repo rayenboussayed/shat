@@ -38,6 +38,9 @@ const styles = stylex.create({
     color: "#b45309",
     fontWeight: 600,
   },
+  note: {
+    marginTop: tokens.spacingSmall,
+  },
   status: {
     marginTop: tokens.spacingSmall,
   },
@@ -138,12 +141,16 @@ export function MessageComposer(props: MessageComposerProps) {
       ...stylex.props(styles.textarea),
       value: text,
       onChange: (event: { target: { value: string } }) => setText(event.target.value),
-      "aria-label": "Message body",
     }),
     createElement(
       "p",
       { ...stylex.props(styles.demo) },
       DEMO_ENVELOPE_LABEL,
+    ),
+    createElement(
+      "p",
+      { ...stylex.props(styles.note) },
+      "Ghost Mode avoids local storage only. Sending stores this envelope on the server.",
     ),
     createElement(
       "button",

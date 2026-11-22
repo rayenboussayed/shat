@@ -1,5 +1,10 @@
 import { describe, it, expect, vi } from "vitest";
-import { GhostModeController, GHOST_MODE_DEFAULT, isGhostModeEnabled } from "../../src/ghost/controller.ts";
+import {
+  GhostModeController,
+  GHOST_MODE_DEFAULT,
+  MAX_MESSAGES_PER_CONVERSATION,
+  isGhostModeEnabled,
+} from "../../src/ghost/controller.ts";
 
 describe("ghost mode", () => {
   it("defaults to on", () => {
@@ -16,6 +21,20 @@ describe("ghost mode", () => {
     expect(controller.read("c1")).toHaveLength(1);
     controller.closeConversation("c1");
     expect(controller.read("c1")).toHaveLength(0);
+  });
+
+  it("caps the buffer per conversation and drops the oldest messages", () => {
+    const controller = new GhostModeController();
+    const total = MAX_MESSAGES_PER_CONVERSATION + 5;
+    for (let index = 0; index < total; index += 1) {
+      controller.store("c1", `msg-${index}`, `id-${index}`);
+    }
+    const buffered = controller.read("c1");
+    expect(buffered).toHaveLength(MAX_MESSAGES_PER_CONVERSATION);
+    expect(buffered[0]?.content).toBe("msg-5");
+    expect(buffered[buffered.length - 1]?.content).toBe(`msg-${total - 1}`);
+    controller.store("c2", "other");
+    expect(controller.read("c2")).toHaveLength(1);
   });
 
   it("returns a shallow copy from read", () => {

@@ -1,39 +1,42 @@
 # Security scenarios (SHAT §19.2)
 
-Matrix of §19.2 adversarial scenarios, their control, owning subtask, and
-verification status. Every scenario is either covered by an automated test or
-listed here as deferred with a reason.
+Matrix of §19.2 adversarial scenarios, their control, and verification status.
+"Automated" means a test runs in this environment; "DB-gated" means the test
+needs `DATABASE_URL` (it passed against a real PostgreSQL during this build);
+"Deferred" means no implementation exists and the reason is stated.
 
-## Covered without a database
+## Covered
 
-| Scenario | Control | Owning subtask | Status |
-| --- | --- | --- | --- |
-| Malformed frame (invalid JSON body to an identity route) | Fastify body parser + `IdentityExceptionsFilter` | P4 | Automated: `apps/backend/tests/unit/security-corpus.test.ts` |
-| Oversized payload (base64 field beyond 8192 chars) | JSON Schema `maxLength` on `base64Schema` | P4 | Automated: `apps/backend/tests/unit/security-corpus.test.ts` |
-| Invalid identity key byte length | `AuthService.decodeBase64(..., 32)` | P4 | Automated: `apps/backend/tests/unit/security-corpus.test.ts` |
-| Invalid signed prekey public key / signature byte length | `AuthService.decodeBase64(..., 32/64)` | P4 | Automated: `apps/backend/tests/unit/security-corpus.test.ts` |
-| Invalid one-time prekey byte length | `AuthService.decodeBase64(..., 32)` | P4 | Automated: `apps/backend/tests/unit/security-corpus.test.ts` |
-| Unknown session token | `AuthService.getAuthenticatedActor` returns `undefined` -> 401 | P4 | Automated: `apps/backend/tests/unit/security-corpus.test.ts` |
-| Expired session token | `sessions.expires_at > now()` in the auth query | P4 | Deferred: expiry is enforced in SQL, so exercising it requires `DATABASE_URL` |
-| Both session headers supplied at once | `AuthService.getSessionToken` returns `undefined` -> 401 | P4 | Automated: `apps/backend/tests/unit/security-corpus.test.ts` |
-| Enrollment fail-closed (missing `SHAT_ENROLLMENT_TOKEN` or `SHAT_ENROLLMENT_USER_ID`) | `DeviceService.createDevice` returns 503 | P4 | Automated: `apps/backend/tests/unit/security-corpus.test.ts` |
-| Constant-time comparison (wrong-length / mismatched token) | `AuthService.matchesSecret` / `matchesUtf8` | P4 | Automated: `apps/backend/tests/unit/security-corpus.test.ts` |
-| Request ID not caller-controlled | `requestIdHeader: false` + `genReqId` | P1/P4 | Automated: `apps/backend/tests/unit/app.test.ts` |
+| Scenario | Control | Status |
+| --- | --- | --- |
+| Malformed frame (invalid JSON body) | Fastify body parser + public error filter | Automated: `apps/backend/tests/unit/security-corpus.test.ts` |
+| Oversized payload (base64 beyond schema bound) | JSON Schema `maxLength` | Automated: `security-corpus.test.ts` |
+| Invalid identity key / signed prekey / one-time key lengths | Canonical base64 with exact byte lengths | Automated: `security-corpus.test.ts` |
+| Unknown session token, both session headers | Session auth via `AuthService` | Automated: `security-corpus.test.ts` |
+| Enrollment fail-closed | Secret and owner validated at enrollment | Automated: `security-corpus.test.ts` |
+| Constant-time comparison | `timingSafeEqual` with length checks | Automated: `security-corpus.test.ts` |
+| Request ID not caller-controlled | `requestIdHeader: false` + generated UUID | Automated: `apps/backend/tests/unit/app.test.ts` |
+| Replay / duplicate signaling event | Bounded TTL replay guard by event id | Automated: `apps/backend/tests/unit/signaling.test.ts` |
+| Signaling authorization bypass | Handshake auth and call-state role checks | Automated: `signaling.test.ts` |
+| WebSocket flood | Per-device event rate limit and socket cap | Automated: `signaling.test.ts` |
+| TURN credential abuse | Short-lived HMAC credentials bound to device | Automated: `apps/backend/tests/unit/turn.test.ts` |
+| Tampered attachment / digest mismatch | SHA-256 digest verification before delivery | Automated: `apps/backend/tests/unit/attachments.test.ts` and DB-gated integration |
 
-## Deferred
+## DB-gated (passed with a real PostgreSQL during this build)
 
-| Scenario | Control | Owning subtask | Reason |
-| --- | --- | --- | --- |
-| Downgrade / tampered input (unknown body property) | `additionalProperties: false` in JSON Schema | P1/P4 | Fastify default validator strips unknown properties instead of rejecting; needs `removeAdditional: false` in `buildApp` |
-| Replay | Mailbox idempotency key | S5 | Requires `DATABASE_URL` and mailbox schema |
-| Duplicate delivery | Delivery receipt uniqueness | S5 | Requires `DATABASE_URL` and receipt schema |
-| Group protocol abuse | Group membership + sender keys | S5 | Requires `DATABASE_URL` and group tables |
-| Tampered attachment chunk | Chunk hash verification | S6 | Requires storage and `DATABASE_URL` |
-| Decompression bomb | Size limits before decompression | S6 | Requires attachment pipeline and `DATABASE_URL` |
-| Signaling bypass | WebRTC signaling authorization | WebRTC subtask | Requires native/platform build |
-| TURN abuse | TURN credential scoping | Infrastructure | Requires TURN server and network harness |
-| WebSocket flood | Rate limiting + connection caps | Transport subtask | Requires WebSocket server |
-| Local discovery spoofing | Platform discovery validation | Native subtask | Requires native platform build |
-| SQLCipher missing | Fail-closed database open | S14 | Requires native SQLCipher build |
-| Ghost crash recovery | Crash-safe persistence | Native subtask | Requires native client harness |
-| Stale push delivery | Push endpoint expiry handling | Push subtask | Requires push service and `DATABASE_URL` |
+| Scenario | Control | Status |
+| --- | --- | --- |
+| Duplicate delivery | Receipt created once per message; ack is idempotent | `apps/backend/tests/integration/mailbox.test.ts` |
+| Mailbox ownership / expired envelope | Recipient-scoped poll, expiry bound | `mailbox.test.ts` (unit + integration) |
+| Concurrent prekey claim / device conflict | `FOR UPDATE SKIP LOCKED`, `ON CONFLICT` | `identity.test.ts` |
+
+## Deferred (no implementation; reason stated)
+
+| Scenario | Reason |
+| --- | --- |
+| Downgrade / tampered unknown body property | Fastify's default Ajv strips unknown properties instead of rejecting them; a strict `removeAdditional: false` change is a separate bootstrap change |
+| Group protocol abuse | Group key management is a separate protocol milestone (§4.5) |
+| Decompression bomb | No compression in the current envelope path; a future compressed envelope needs output limits |
+| Local discovery spoofing | Native platform adapters are interface-only contracts here |
+| SQLCipher missing on device | Fail-closed gate is unit-tested; device verification needs a native build |
+| Ghost crash recovery / stale push | Native client and push service are deferred (§21) |

@@ -6,7 +6,6 @@ const uuidSchema = {
   pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
 } as const;
 
-/** Loose base64 string bounds; exact byte lengths are checked in services. */
 /** Session lifetime used when enrolling a device. */
 export const sessionDurationMs = 30 * 24 * 60 * 60 * 1000;
 

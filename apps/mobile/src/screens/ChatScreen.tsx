@@ -121,7 +121,7 @@ export function ChatScreen(): ReactElement {
       ghost.store(selected ?? "default", trimmed);
       if (!controller.signal.aborted) {
         setText("");
-        setStatus("Sent.");
+        setStatus("Sent (demo / not E2EE).");
       }
     } catch {
       if (!controller.signal.aborted) {
@@ -156,8 +156,9 @@ export function ChatScreen(): ReactElement {
           {id}
         </Button>
       ))}
+      <Text accessibilityLabel="Demo, not end-to-end encrypted">demo / not E2EE</Text>
       <TextInput
-        label="Message"
+        label="Message (demo, not encrypted)"
         value={text}
         onChangeText={setText}
         accessibilityLabel="Message body"

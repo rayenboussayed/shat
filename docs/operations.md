@@ -74,9 +74,10 @@ make health                            # scripts/health-check.sh against /health
   pg_dump -U "$POSTGRES_USER" "$POSTGRES_DB" > backup.sql`. Verify the dump is
   non-empty and stored outside the volume. Restoring is `pg_dump`'s inverse with
   `psql`; rehearse it before relying on it.
-- The pinned base-image tag↔digest correspondence was not verifiable in this
-  environment (no registry reachability). Re-check digests before a real deploy;
-  the current guarantee is immutable tag-level pinning, not digest-level.
+- Base-image tag↔digest pairs were verified via the Docker Hub tag API on
+  2026-11-22; all three matched after correcting a stale postgres pin. Re-check
+  them before a real deploy because tags can be re-pushed. Images are pinned by
+  tag and digest.
 
 ## Rollback
 

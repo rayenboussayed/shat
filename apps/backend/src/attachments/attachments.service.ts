@@ -192,10 +192,17 @@ export class AttachmentsService {
       await tx.execute(
         sql`select pg_advisory_xact_lock(hashtextextended(${record.ownerDeviceId}::text, 0))`,
       );
+      const now = new Date();
       const [usage] = await tx
         .select({ total: sql<string>`coalesce(sum(${attachments.sizeBytes}), 0)::text` })
         .from(attachments)
-        .where(and(eq(attachments.ownerDeviceId, record.ownerDeviceId), isNull(attachments.deletedAt)));
+        .where(
+          and(
+            eq(attachments.ownerDeviceId, record.ownerDeviceId),
+            isNull(attachments.deletedAt),
+            gt(attachments.expiresAt, now),
+          ),
+        );
       if (Number(usage?.total ?? 0) + record.sizeBytes > ATTACHMENT_LIMITS.maxOwnerBytes) {
         throw new PayloadTooLargeException("The attachment quota is exhausted");
       }

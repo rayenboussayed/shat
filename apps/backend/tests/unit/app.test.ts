@@ -60,5 +60,12 @@ describe("Fastify application", () => {
     });
 
     expect(response.statusCode).toBe(400);
+    expect(response.json()).toMatchObject({
+      statusCode: 400,
+      error: "Bad Request",
+      message: "The request is invalid",
+    });
+    expect(response.json()).not.toHaveProperty("requestId");
+    expect(response.body).not.toContain("required property");
   });
 });

@@ -25,6 +25,9 @@ import type {
   SessionHeaders,
 } from "./schemas.ts";
 
+/** Longest accepted mailbox retention, matching attachment uploads (30 days). */
+const MAX_MAILBOX_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
+
 const publicError = (statusCode: number) => {
   const map: Record<number, { error: string; message: string }> = {
     400: { error: "Bad Request", message: "The request is invalid" },
@@ -75,7 +78,12 @@ export class MailboxService {
     }
 
     const expiry = parseExpiry(body.expiry);
-    if (!expiry) {
+    const nowMs = Date.now();
+    if (
+      !expiry ||
+      expiry.getTime() <= nowMs ||
+      expiry.getTime() > nowMs + MAX_MAILBOX_RETENTION_MS
+    ) {
       return {
         status: 400,
         body: { statusCode: 400, error: "Bad Request", message: "The expiry is invalid" },
@@ -263,7 +271,7 @@ export class MailboxService {
     }
 
     let receiptId = "";
-    let receiptState = state;
+    let receiptState: string = state;
     let receiptAt = now;
 
     await db.transaction(async (transaction) => {
@@ -285,6 +293,14 @@ export class MailboxService {
           existingReceipt.receiptAt instanceof Date
             ? existingReceipt.receiptAt
             : new Date(existingReceipt.receiptAt);
+        if (receiptState === "delivered" && state === "read") {
+          receiptState = "read";
+          receiptAt = now;
+          await transaction
+            .update(deliveryReceipts)
+            .set({ state: "read", receiptAt: now })
+            .where(eq(deliveryReceipts.id, existingReceipt.id));
+        }
       } else {
         receiptId = randomUUID();
         await transaction.insert(deliveryReceipts).values({

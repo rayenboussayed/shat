@@ -136,6 +136,30 @@ describe("Identity and prekey routes", () => {
     }
   });
 
+  it.each(["secret", "a".repeat(32)])(
+    "fails closed when the enrollment token is too weak (%s)",
+    async (weakToken) => {
+      const originalSecret = process.env.SHAT_ENROLLMENT_TOKEN;
+      const originalUserId = process.env.SHAT_ENROLLMENT_USER_ID;
+      process.env.SHAT_ENROLLMENT_TOKEN = weakToken;
+      process.env.SHAT_ENROLLMENT_USER_ID = userId;
+      try {
+        const response = await app.inject({
+          method: "POST",
+          url: "/identity/devices",
+          headers: { "x-enrollment-token": weakToken },
+          payload: { deviceId: randomUUID(), userId },
+        });
+
+        expect(response.statusCode).toBe(503);
+        expect(response.json()).toMatchObject({ error: "Service Unavailable" });
+      } finally {
+        restoreEnvironmentVariable("SHAT_ENROLLMENT_TOKEN", originalSecret);
+        restoreEnvironmentVariable("SHAT_ENROLLMENT_USER_ID", originalUserId);
+      }
+    },
+  );
+
   it("preserves the identity error envelope without requestId", async () => {
     const identityResponse = await app.inject({
       method: "POST",

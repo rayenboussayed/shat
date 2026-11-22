@@ -1,8 +1,9 @@
 import { createElement } from "react";
 
 /**
- * Operations metrics panel. No telemetry endpoints are exposed by the backend
- * yet, so this panel states that honestly instead of showing fabricated
+ * Operations metrics panel. Live telemetry is not wired into this dashboard
+ * yet: the backend does expose `GET /telemetry/summary`, but this UI does not
+ * consume it, so the panel says so honestly instead of showing fabricated
  * numbers.
  *
  * @returns The rendered metrics panel element.
@@ -15,12 +16,12 @@ export function MetricsPanel(): ReturnType<typeof createElement> {
     createElement(
       "p",
       null,
-      "No telemetry endpoints are implemented yet; operational statistics are not exposed.",
+      "Live telemetry is not wired into this dashboard yet; the backend exposes GET /telemetry/summary but this UI does not consume it.",
     ),
     createElement(
       "p",
       null,
-      "No fabricated metrics are shown. Counts and latency will appear here once the backend exposes them.",
+      "No fabricated metrics are shown. Counts and latency will appear here once this dashboard consumes the telemetry endpoint.",
     ),
   );
 }

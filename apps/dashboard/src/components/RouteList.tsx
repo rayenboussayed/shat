@@ -2,8 +2,9 @@ import { createElement } from "react";
 import { BACKEND_ROUTES } from "../lib/routes.ts";
 
 /**
- * Lists the backend routes that currently exist, derived from the generated
- * OpenAPI types. Provides operational visibility without backend changes.
+ * Lists a subset of API routes, derived from the generated OpenAPI contract at
+ * build time. Provides operational visibility without backend changes; the
+ * list is intentionally not exhaustive.
  *
  * @returns The rendered route list element.
  */
@@ -11,7 +12,12 @@ export function RouteList(): ReturnType<typeof createElement> {
   return createElement(
     "section",
     { "aria-label": "Backend routes" },
-    createElement("h2", null, "Backend routes"),
+    createElement("h2", null, "Backend routes (subset)"),
+    createElement(
+      "p",
+      null,
+      "A subset of API routes from the generated contract at build time; not exhaustive.",
+    ),
     createElement(
       "ul",
       { "data-testid": "route-list" },

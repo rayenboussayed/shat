@@ -6,7 +6,7 @@ import { AuthService } from "../identity/auth.service.ts";
 import type { Actor, SessionHeaders } from "../identity/schemas.ts";
 import { ConnectionRegistry } from "./connections.ts";
 import type { SignalingClient } from "./connections.ts";
-import { ConnectionRateLimiter } from "./guards.ts";
+import { ConnectionRateLimiter, FailedAuthLimiter } from "./guards.ts";
 import { MAX_EVENT_BYTES, SIGNAL_EVENT } from "./schemas.ts";
 import type { SignalingErrorCode } from "./schemas.ts";
 import { SignalingService } from "./signaling.service.ts";
@@ -55,6 +55,7 @@ export class SignalingGateway implements OnGatewayConnection, OnGatewayDisconnec
   private readonly logger = new Logger("Signaling");
   private readonly sessions = new Map<SignalingClient, Actor>();
   private readonly limiters = new Map<string, ConnectionRateLimiter>();
+  private readonly failedAuth = new FailedAuthLimiter();
 
   constructor(
     private readonly auth: AuthService,
@@ -68,11 +69,18 @@ export class SignalingGateway implements OnGatewayConnection, OnGatewayDisconnec
    * @param client - The new socket.
    */
   async handleConnection(client: SignalingSocket): Promise<void> {
+    const now = Date.now();
+    if (this.failedAuth.isFull(now)) {
+      this.logger.log("event=connect outcome=auth-flood");
+      this.refuse(client, "RATE_LIMITED", "Too many authentication attempts");
+      return;
+    }
     const actor = await this.auth.getAuthenticatedActor(handshakeHeaders(client.handshake));
     if (!client.connected) {
       return;
     }
     if (!actor) {
+      this.failedAuth.record(Date.now());
       this.logger.log("event=connect outcome=unauthenticated");
       this.refuse(client, "NOT_AUTHENTICATED", "Authentication is required");
       return;

@@ -29,7 +29,7 @@ jobs:
       DATABASE_URL: postgres://shat:shat@localhost:5432/shat
     services:
       postgres:
-        image: postgres:16
+        image: postgres:16-alpine@sha256:f2f98726820d0342055351c6e9d36e705f5bfffb3dd53ff556325114b08afb6d
         env:
           POSTGRES_USER: shat
           POSTGRES_PASSWORD: shat
@@ -66,14 +66,26 @@ jobs:
       - name: Integration tests (PostgreSQL service)
         run: npm run test-integration
 
+      - name: Build backend for e2e (dist is gitignored)
+        run: npm run build -w apps/backend
+
       - name: End-to-end tests
         run: npm run test-e2e
 
       - name: Coverage
         run: npm run test-cov -- --coverage.reporter=text --coverage.reporter=json-summary
 
+      - name: Performance benchmarks
+        run: npm run test-perf
+
+      - name: Memory tests
+        run: npm run test-mem
+
       - name: Build all workspaces
         run: npm run build
+
+      - name: API contract drift check
+        run: npm run gen:api:check
 
       - name: Validate Compose files
         run: |

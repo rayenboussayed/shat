@@ -47,7 +47,8 @@
     "compose-config": "docker compose -f infrastructure/docker/compose.development.yaml config >/dev/null",
     "gen:migrations": "bash scripts/run-in-workspaces.sh gen:migrations",
     "clean": "bash scripts/run-in-workspaces.sh clean",
-    "gen:api": "npm run build -w apps/backend && node apps/backend/scripts/generate-openapi.ts && npx --yes openapi-typescript@7.13.0 packages/api-types/src/openapi.json -o packages/api-types/src/api.d.ts"
+    "gen:api": "npm run build -w apps/backend && node apps/backend/scripts/generate-openapi.ts && npx --yes openapi-typescript@7.13.0 packages/api-types/src/openapi.json -o packages/api-types/src/api.d.ts",
+    "gen:api:check": "npm run gen:api && git diff --exit-code -- packages/api-types/src/openapi.json packages/api-types/src/api.d.ts"
   },
   "devDependencies": {
     "@commitlint/cli": "21.2.4",

@@ -83,20 +83,28 @@ The true baseline (commit `f00088a`, before code changes) was **30.87%
 statements / 13.58% branches / 40.78% functions / 31.31% lines**, with baseline
 gates failing on missing database scripts and a TS5096 build error (repaired in
 P0). Coverage rose to 54.73% statements (P4) and 82.2% with a real database
-(P6). The current local run without `DATABASE_URL` is **78.1% statements
-(1070/1370), 65.24% branches, 82.59% functions, 78.52% lines** — the gap is
-largely `DATABASE_URL`-gated identity/prekey code. No benchmark or memory
-baseline files exist yet, so those suites are recorded as absent, not regressed.
+(P6). A final-tree run without `DATABASE_URL` is **78.12% statements
+(1064/1362), 65.31% branches, 82.53% functions, 78.37% lines**; with a real
+PostgreSQL the integration suites pass (15/15) and statement coverage rises to
+about 82%. The gap is largely `DATABASE_URL`-gated identity/prekey code. There
+are no configured coverage thresholds, so these numbers are reported, not
+enforced as gates; 95% global / 98% domain / 100% crypto remain recommended
+targets. Benchmark and memory suites exist but have no numeric baseline to
+compare against.
 
 ## Architecture and decisions
 
-Two transport modes sit behind one security layer; the security layer never
-depends on the transport (§2). Local Mode (§3.1) covers nearby-device discovery
-without Internet or SHAT infrastructure; Online Mode (§3.6) uses authenticated
-WebSocket rendezvous/signaling and WebRTC media with a self-hosted TURN relay
-fallback. Cryptography (§5) uses reviewed specifications and libraries only —
-Argon2id passwords, HKDF with context separation, AEAD framing and key
-hierarchies; no custom protocol is invented (§5.1, §5.8, §19).
+Two transport modes are the target design; the security layer must never
+depend on the transport (§2). What is implemented here is the Online-mode
+server surface: identity and prekeys, an encrypted mailbox, a signaling
+gateway, and short-lived TURN credentials. Local Mode (§3.1) nearby discovery
+and WebRTC media are future work: only fail-closed TypeScript contracts exist
+for native transports and calls (§3.4, §12). No client depends on the signaling
+gateway yet. Real E2EE is not implemented: ADR 0006 defines an interface-only
+crypto facade, and no algorithm is chosen or certified (§5.1, §5.8). The server
+uses SHA-256 token hashing and HMAC for capabilities and TURN credentials; it
+does not implement Argon2id, HKDF or AEAD message framing. No custom protocol
+is invented.
 
 Server: NestJS/Fastify + Drizzle/PostgreSQL. Web: React/Vite/TanStack/StyleX.
 Dashboard: React/Vite. Mobile: Expo 58. ADRs and open decisions:
@@ -113,8 +121,9 @@ DB setup, backups and rollback: **`docs/operations.md`** (the runbook).
   algorithm is chosen or certified and no E2EE claim is validated.
 - TURN interop with external peers: credential minting is tested, live media
   relay is not.
-- Tag↔digest correspondence of pinned base images: registry unreachable here;
-  a control tag lookup also failed. Pinning is immutable-tag level, not digest.
+- Base-image tag↔digest pairs were verified via the Docker Hub tag API on
+  2026-11-22 and all three now match. A stale postgres pin was corrected.
+  Re-check them before a deploy because tags can be re-pushed.
 - External registry push: no real registry configured; `SHAT_REGISTRY` is a
   documented namespace placeholder, not a verified target.
 - Kubernetes manifests are a separate, unvalidated deployment surface here.

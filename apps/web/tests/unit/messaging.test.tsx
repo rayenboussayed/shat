@@ -33,6 +33,33 @@ async function flush() {
   });
 }
 
+/** Types into the composer and submits it, flushing all resulting updates. */
+async function typeAndSubmit(container: HTMLElement, value: string) {
+  const textareaNode = container.querySelector("textarea");
+  if (!(textareaNode instanceof HTMLTextAreaElement)) {
+    throw new Error("textarea not found");
+  }
+  await act(async () => {
+    const valueSetter = Object.getOwnPropertyDescriptor(
+      Object.getPrototypeOf(textareaNode),
+      "value",
+    )?.set;
+    valueSetter?.call(textareaNode, value);
+    textareaNode.dispatchEvent(new Event("input", { bubbles: true }));
+  });
+  await act(async () => {
+    await Promise.resolve();
+  });
+  const formNode = container.querySelector("form");
+  if (!(formNode instanceof HTMLFormElement)) {
+    throw new Error("form not found");
+  }
+  await act(async () => {
+    formNode.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
+  });
+  await flush();
+}
+
 describe("ConversationList", () => {
   beforeEach(() => {
     vi.clearAllMocks();
@@ -118,37 +145,13 @@ describe("MessageComposer", () => {
     await act(async () => {
       root.render(createElement(MessageComposer, { recipientDeviceId: "11111111-1111-4111-8111-111111111111" }));
     });
-    const textareaNode = container.querySelector("textarea");
-    if (!(textareaNode instanceof HTMLTextAreaElement)) {
-      throw new Error("textarea not found");
-    }
-    const textarea = textareaNode;
-    await act(async () => {
-      const valueSetter = Object.getOwnPropertyDescriptor(
-        Object.getPrototypeOf(textarea),
-        "value",
-      )?.set;
-      valueSetter?.call(textarea, "hello");
-      textarea.dispatchEvent(new Event("input", { bubbles: true }));
-    });
-    await act(async () => {
-      await Promise.resolve();
-    });
-    const formNode = container.querySelector("form");
-    if (!(formNode instanceof HTMLFormElement)) {
-      throw new Error("form not found");
-    }
-    const form = formNode;
-    await act(async () => {
-      form.dispatchEvent(new Event("submit", { bubbles: true, cancelable: true }));
-    });
-    await flush();
+    await typeAndSubmit(container, "hello");
     expect(api.POST).toHaveBeenCalledWith(
       "/mailbox",
       expect.objectContaining({
         body: expect.objectContaining({
           recipientDeviceId: "11111111-1111-4111-8111-111111111111",
-          envelope: derivePlaceholderEnvelope("hello"),
+          envelope: "aGVsbG8=",
           expiry: expect.stringMatching(/^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/),
         }),
       }),
@@ -156,21 +159,28 @@ describe("MessageComposer", () => {
     root.unmount();
   });
 
-  it("keeps Ghost Mode on and persists nothing", async () => {
+  it("keeps Ghost Mode on and writes nothing to local storage when sending", async () => {
     expect(GHOST_MODE_DEFAULT).toBe(true);
     expect(isGhostModeEnabled(undefined)).toBe(true);
     const localSpy = vi.spyOn(localStorage, "setItem");
     const sessionSpy = vi.spyOn(sessionStorage, "setItem");
-    const { root } = render(createElement(MessageComposer));
+    const { container, root } = render(createElement(MessageComposer));
     await act(async () => {
       root.render(createElement(MessageComposer));
     });
-    await flush();
+    await typeAndSubmit(container, "hello");
+    expect(api.POST).toHaveBeenCalledWith("/mailbox", expect.anything());
     expect(localSpy).not.toHaveBeenCalled();
     expect(sessionSpy).not.toHaveBeenCalled();
     localSpy.mockRestore();
     sessionSpy.mockRestore();
     root.unmount();
+  });
+});
+
+describe("derivePlaceholderEnvelope", () => {
+  it("base64-encodes UTF-8 input (known-answer vector)", () => {
+    expect(derivePlaceholderEnvelope("hello")).toBe("aGVsbG8=");
   });
 });
 

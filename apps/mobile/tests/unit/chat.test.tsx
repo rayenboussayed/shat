@@ -59,34 +59,20 @@ async function flush() {
 describe("ChatScreen", () => {
   beforeEach(() => {
     vi.clearAllMocks();
-    const conversationPayload = {
+    vi.mocked(api.GET).mockResolvedValue({
       data: {
         conversations: [
           { id: "conv-1", kind: "direct", createdAt: "2026-01-01T00:00:00Z", members: ["a", "b"] },
         ],
       },
       error: undefined,
-    } satisfies {
-      data: {
-        conversations: readonly {
-          readonly id: string;
-          readonly kind: string;
-          readonly createdAt: string;
-          readonly members: readonly string[];
-        }[];
-      };
-      error: undefined;
-    };
-    const mailboxPayload = {
+      response: new Response(),
+    } satisfies Awaited<ReturnType<typeof api.GET>>);
+    vi.mocked(api.POST).mockResolvedValue({
       data: {},
       error: undefined,
-    } satisfies { data: Record<string, unknown>; error: undefined };
-    vi.mocked(api.GET).mockResolvedValue(
-      conversationPayload as unknown as Awaited<ReturnType<typeof api.GET>>,
-    );
-    vi.mocked(api.POST).mockResolvedValue(
-      mailboxPayload as unknown as Awaited<ReturnType<typeof api.POST>>,
-    );
+      response: new Response(),
+    } satisfies Awaited<ReturnType<typeof api.POST>>);
   });
 
   it("renders conversations", async () => {

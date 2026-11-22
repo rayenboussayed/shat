@@ -74,12 +74,9 @@ entry per subtask. Date format: `YYYY-MM-DD`. Build-phase subtasks use the
   three moderate upstream `expo` advisories. The user accepted this risk; no
   override or audit-level change was added; the root `--omit=dev` baseline was
   clean (0 vulnerabilities) before mobile was added.
-- **Unreachable-digest caveat — 2026-11-22**: The tag-to-digest correspondence
-  of pinned base images (`node`, `nginx`, `postgres`) could not be verified in
-  this environment (DinD cannot reach the registry; a control tag lookup also
-  failed). Digests are used as written and must be re-checked before a real
-  deploy. Immutability guaranteed by the current deployment is tag-level, not
-  digest-level.
+- **Digest verification — 2026-11-22**: Base-image tag↔digest pairs were
+  verified via the Docker Hub tag API. A stale `postgres:16-alpine` digest was
+  corrected; all three pins now match their tags. Re-check before a real deploy.
 - **CI/docs (P14) — 2026-11-22**: Hardened PR and release workflows, final
   architecture and runbook, accurate ADR index and the crypto-facade ADR.
   No app code changed.

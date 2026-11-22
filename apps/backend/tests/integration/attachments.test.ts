@@ -158,6 +158,22 @@ describe("Attachment routes", () => {
     }
   });
 
+  it.skipIf(!databaseUrl)("does not count expired ciphertext against the owner quota", async () => {
+    const holderId = randomUUID();
+    await db().query(
+      `INSERT INTO attachments (id, owner_device_id, storage_key, size_bytes, content_type, digest_sha256, created_at, expires_at)
+       VALUES ($1, $2, $3, $4, 'application/octet-stream', $5, now(), now() - interval '1 day')`,
+      [holderId, ownerDeviceId, randomUUID(), 64 * 1024 * 1024, Buffer.alloc(32)],
+    );
+
+    try {
+      const response = await upload(app, ownerToken, randomBytes(16));
+      expect(response.statusCode).toBe(201);
+    } finally {
+      await db().query(`DELETE FROM attachments WHERE id = $1`, [holderId]);
+    }
+  });
+
   it.skipIf(!databaseUrl)("purges expired attachments and their blobs", async () => {
     const attachmentId = randomUUID();
     const storageKey = randomUUID();

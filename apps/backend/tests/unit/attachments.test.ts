@@ -255,7 +255,7 @@ describe("attachment routes without a database", () => {
     });
 
     expect(response.statusCode).toBe(400);
-    expect(response.json()).toMatchObject({ message: "The digest does not match the ciphertext" });
+    expect(response.json()).toMatchObject({ statusCode: 400, message: "The request is invalid" });
     expect(storage.blobs.size).toBe(0);
   });
 

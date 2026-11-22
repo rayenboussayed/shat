@@ -13,7 +13,7 @@ name: shat-prod
 
 services:
   postgres:
-    image: postgres:16-alpine@sha256:1d5b02d3a9941fbd52437db4107f8c52d6297dac553ca1e5c299ebb3756b4857
+    image: postgres:16-alpine@sha256:f2f98726820d0342055351c6e9d36e705f5bfffb3dd53ff556325114b08afb6d
     environment:
       POSTGRES_USER: ${POSTGRES_USER:-shat}
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-}
@@ -29,7 +29,7 @@ services:
     restart: unless-stopped
 
   backend:
-    image: ${SHAT_REGISTRY:-}shat-backend:${SHAT_IMAGE_TAG:-2ae5e8f}
+    image: ${SHAT_REGISTRY:-}shat-backend:${SHAT_IMAGE_TAG:-sha-2ae5e8f}
     build:
       context: ../..
       dockerfile: infrastructure/docker/Dockerfile
@@ -64,7 +64,7 @@ services:
     restart: unless-stopped
 
   web:
-    image: ${SHAT_REGISTRY:-}shat-web:${SHAT_IMAGE_TAG:-2ae5e8f}
+    image: ${SHAT_REGISTRY:-}shat-web:${SHAT_IMAGE_TAG:-sha-2ae5e8f}
     build:
       context: ../..
       dockerfile: infrastructure/docker/Dockerfile.web
@@ -85,7 +85,7 @@ services:
     restart: unless-stopped
 
   dashboard:
-    image: ${SHAT_REGISTRY:-}shat-dashboard:${SHAT_IMAGE_TAG:-2ae5e8f}
+    image: ${SHAT_REGISTRY:-}shat-dashboard:${SHAT_IMAGE_TAG:-sha-2ae5e8f}
     build:
       context: ../..
       dockerfile: infrastructure/docker/Dockerfile.dashboard
