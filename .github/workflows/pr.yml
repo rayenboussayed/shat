@@ -1,0 +1,81 @@
+# SHAT pull-request CI (spec §18.3/§18.4).
+#
+# Scope: repository code only. Native mobile builds are intentionally NOT run:
+# this repo has no macOS runner, Android SDK or signing credentials, so a
+# "green" native build here would be false. EAS builds remain manual (see
+# docs/operations.md and apps/mobile/README.md).
+#
+# Hardening: pull_request (not pull_request_target) so fork code runs without
+# secrets; top-level read-only permissions; every third-party action pinned to a
+# full commit SHA; no cache (setup-node cache keys are shared across refs, so a
+# fork PR could poison a default-branch build); no secrets interpolated into
+# shell; checkout does not persist the token because nothing pushes back.
+
+name: PR
+
+on:
+  pull_request:
+    branches:
+      - main
+
+permissions:
+  contents: read
+
+jobs:
+  verify:
+    name: Check, test, build and validate
+    runs-on: ubuntu-latest
+    env:
+      DATABASE_URL: postgres://shat:shat@localhost:5432/shat
+    services:
+      postgres:
+        image: postgres:16
+        env:
+          POSTGRES_USER: shat
+          POSTGRES_PASSWORD: shat
+          POSTGRES_DB: shat
+        ports:
+          - 5432:5432
+        options: >-
+          --health-cmd "pg_isready -U shat -d shat"
+          --health-interval 5s
+          --health-timeout 3s
+          --health-retries 12
+          --health-start-period 5s
+    steps:
+      - name: Checkout
+        uses: actions/checkout@11bd71901bbe5b1630ceea73d27597364c9af683 # v4.2.2
+        with:
+          persist-credentials: false
+
+      - name: Set up Node.js 26.13.1
+        uses: actions/setup-node@cdca7365b2dadb8aad0a33bc7601856ffabcc48e # v4.3.0
+        with:
+          node-version: '26.13.1'
+          # No cache: see the hardening note at the top of this file.
+
+      - name: Install dependencies (frozen lockfile)
+        run: npm ci
+
+      - name: Check (typecheck, lint, knip, tests)
+        run: npm run check
+
+      - name: Unit tests
+        run: npm run test-unit
+
+      - name: Integration tests (PostgreSQL service)
+        run: npm run test-integration
+
+      - name: End-to-end tests
+        run: npm run test-e2e
+
+      - name: Coverage
+        run: npm run test-cov -- --coverage.reporter=text --coverage.reporter=json-summary
+
+      - name: Build all workspaces
+        run: npm run build
+
+      - name: Validate Compose files
+        run: |
+          docker compose -f infrastructure/docker/compose.development.yaml config >/dev/null
+          docker compose -f infrastructure/docker/compose.production.yaml config >/dev/null
