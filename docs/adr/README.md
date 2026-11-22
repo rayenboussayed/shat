@@ -20,4 +20,8 @@ ADR files for the required-ADR list land as their subtasks progress
 | file storage | S6 (spec §6.3) |
 | observability and retention | S9 (spec §13) |
 
+Accepted ADRs:
+
+- [0001 File storage for encrypted attachments](0001-file-storage.md)
+
 The authoritative required-ADR list lives in [required-adrs.md](required-adrs.md).
