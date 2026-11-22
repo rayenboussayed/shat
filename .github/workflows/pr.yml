@@ -1,4 +1,7 @@
-# SHAT pull-request CI (spec §18.3/§18.4).
+# SHAT continuous integration (spec §18.3/§18.4).
+#
+# Triggers on pull requests, every push to main, and manual dispatch, so direct
+# pushes to main are still verified and a run can be started from the Actions tab.
 #
 # Scope: repository code only. Native mobile builds are intentionally NOT run:
 # this repo has no macOS runner, Android SDK or signing credentials, so a
@@ -11,12 +14,16 @@
 # fork PR could poison a default-branch build); no secrets interpolated into
 # shell; checkout does not persist the token because nothing pushes back.
 
-name: PR
+name: CI
 
 on:
   pull_request:
     branches:
       - main
+  push:
+    branches:
+      - main
+  workflow_dispatch:
 
 permissions:
   contents: read
@@ -57,6 +64,11 @@ jobs:
       - name: Install dependencies (frozen lockfile)
         run: npm ci
 
+      # check runs vitest across all projects, including e2e which spawns the
+      # compiled backend. dist is gitignored, so build before check.
+      - name: Build all workspaces
+        run: npm run build
+
       - name: Check (typecheck, lint, knip, tests)
         run: npm run check
 
@@ -65,9 +77,6 @@ jobs:
 
       - name: Integration tests (PostgreSQL service)
         run: npm run test-integration
-
-      - name: Build backend for e2e (dist is gitignored)
-        run: npm run build -w apps/backend
 
       - name: End-to-end tests
         run: npm run test-e2e
@@ -80,9 +89,6 @@ jobs:
 
       - name: Memory tests
         run: npm run test-mem
-
-      - name: Build all workspaces
-        run: npm run build
 
       - name: API contract drift check
         run: npm run gen:api:check
