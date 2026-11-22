@@ -18,7 +18,9 @@ function isPublicPath(path: string): boolean {
     path === "/delivery" ||
     path.startsWith("/delivery/") ||
     path === "/attachments" ||
-    path.startsWith("/attachments/")
+    path.startsWith("/attachments/") ||
+    path === "/turn" ||
+    path.startsWith("/turn/")
   );
 }
 

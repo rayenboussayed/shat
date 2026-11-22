@@ -24,5 +24,7 @@ Accepted ADRs:
 
 - [0001 File storage for encrypted attachments](0001-file-storage.md)
 - [0002 Server signaling topology and transport](0002-signaling-topology.md)
+- [0003 TURN credential policy (coturn not deployed)](0003-turn-credentials.md)
+- [0004 Observability, aggregated telemetry and retention](0004-observability-retention.md)
 
 The authoritative required-ADR list lives in [required-adrs.md](required-adrs.md).
