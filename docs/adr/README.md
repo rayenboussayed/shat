@@ -23,5 +23,6 @@ ADR files for the required-ADR list land as their subtasks progress
 Accepted ADRs:
 
 - [0001 File storage for encrypted attachments](0001-file-storage.md)
+- [0002 Server signaling topology and transport](0002-signaling-topology.md)
 
 The authoritative required-ADR list lives in [required-adrs.md](required-adrs.md).
