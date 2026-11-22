@@ -31,6 +31,7 @@ import type {
 const publicError = (statusCode: number) => {
   const map: Record<number, { error: string; message: string }> = {
     401: { error: "Unauthorized", message: "Authentication is required" },
+    403: { error: "Forbidden", message: "The request is not permitted" },
     404: { error: "Not Found", message: "The requested resource was not found" },
   };
   return { statusCode, ...map[statusCode] };
@@ -213,7 +214,7 @@ export class PrekeyService {
       }
 
       const lockedDevices = await transaction
-        .select({ id: devices.id, revokedAt: devices.revokedAt })
+        .select({ id: devices.id, userId: devices.userId, revokedAt: devices.revokedAt })
         .from(devices)
         .where(inArray(devices.id, [actor.id, body.deviceId]))
         .orderBy(asc(devices.id))
@@ -226,6 +227,9 @@ export class PrekeyService {
       const target = lockedDevices.find((device) => device.id === body.deviceId);
       if (!target || target.revokedAt) {
         return { kind: "not-found" } as const;
+      }
+      if (target.userId !== actorDevice.userId) {
+        return { kind: "forbidden" } as const;
       }
 
       const claim = await transaction.execute<ClaimedPrekey>(sql`
@@ -247,6 +251,9 @@ export class PrekeyService {
 
     if (result.kind === "unauthorized") {
       return { status: 401, body: publicError(401) };
+    }
+    if (result.kind === "forbidden") {
+      return { status: 403, body: publicError(403) };
     }
     if (result.kind === "not-found" || result.kind === "empty") {
       return { status: 404, body: publicError(404) };

@@ -1,13 +1,11 @@
 /**
- * Placeholder envelope helpers for the demo messaging UI.
+ * Placeholder envelope helper for the demo messaging UI.
  *
- * Real end-to-end encryption is a deferred decision (spec §21). These helpers
- * produce a clearly labelled placeholder envelope derived from the input bytes so
- * the mailbox flow can be exercised without claiming to be encrypted.
+ * Real end-to-end encryption is a deferred decision (spec §21). This helper
+ * produces a clearly labelled placeholder envelope derived from the input bytes so
+ * the mailbox flow can be exercised without claiming to be encrypted. The
+ * visible label itself lives in `shat-api-types` and is shared with mobile.
  */
-
-/** Visible label stating that this envelope is a demo, not real E2EE. */
-export const DEMO_ENVELOPE_LABEL = "demo / not E2EE";
 
 /**
  * Derives a placeholder envelope from the supplied text by base64-encoding its

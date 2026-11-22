@@ -6,7 +6,9 @@ const styles = stylex.create({
   panel: {
     marginTop: tokens.spacingMedium,
     padding: tokens.spacingSmall,
-    border: "1px solid #d1d5db",
+    borderWidth: tokens.borderWidthThin,
+    borderStyle: "solid",
+    borderColor: tokens.colorBorder,
     borderRadius: tokens.radiusMedium,
   },
   title: {
@@ -14,7 +16,7 @@ const styles = stylex.create({
   },
   status: {
     marginTop: tokens.spacingSmall,
-    color: "#b45309",
+    color: tokens.colorMuted,
   },
 });
 

@@ -77,10 +77,10 @@ describe("Identity and prekey routes", () => {
       await insertSession(client, actorDeviceId, actorToken);
       await insertSession(client, recipientDeviceId, recipientToken);
     }
-  });
+  }, 30_000);
 
   afterAll(async () => {
-    await app.close();
+    await app?.close();
     const { closeIdentityDatabase } = await import("../../src/db/db.js");
     await closeIdentityDatabase();
     restoreEnvironmentVariable("DATABASE_URL", originalDatabaseUrl);
@@ -94,7 +94,7 @@ describe("Identity and prekey routes", () => {
       client?.release();
       await adminPool?.end();
     }
-  });
+  }, 30_000);
 
   it("rejects device registration without a deviceId", async () => {
     const response = await app.inject({

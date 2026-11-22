@@ -1,6 +1,12 @@
 import { createElement, useEffect, useRef, useState } from "react";
+import {
+  DEFAULT_RECIPIENT_DEVICE_ID,
+  DEMO_ENVELOPE_LABEL,
+  SEND_FAILED_STATUS,
+  SEND_SUCCESS_STATUS,
+} from "shat-api-types";
 import { api } from "../lib/api.ts";
-import { DEMO_ENVELOPE_LABEL, derivePlaceholderEnvelope } from "../lib/envelope.ts";
+import { derivePlaceholderEnvelope } from "../lib/envelope.ts";
 import * as stylex from "@stylexjs/stylex";
 import { tokens } from "../styles/tokens.stylex.ts";
 
@@ -17,25 +23,29 @@ const styles = stylex.create({
   textarea: {
     minHeight: "5rem",
     padding: tokens.spacingSmall,
-    border: "1px solid #d1d5db",
+    borderWidth: tokens.borderWidthThin,
+    borderStyle: "solid",
+    borderColor: tokens.colorBorder,
     borderRadius: tokens.radiusMedium,
     fontFamily: "inherit",
   },
   button: {
     alignSelf: "flex-start",
     padding: `${tokens.spacingSmall} ${tokens.spacingMedium}`,
-    border: "none",
+    borderWidth: 0,
     borderRadius: tokens.radiusMedium,
     backgroundColor: tokens.colorAccent,
-    color: "#ffffff",
+    color: tokens.colorOnAccent,
     cursor: "pointer",
     ":focus-visible": {
-      outline: "2px solid #1d4ed8",
-      outlineOffset: "2px",
+      outlineWidth: tokens.focusRingWidth,
+      outlineStyle: "solid",
+      outlineColor: tokens.colorFocus,
+      outlineOffset: tokens.focusRingOffset,
     },
   },
   demo: {
-    color: "#b45309",
+    color: tokens.colorMuted,
     fontWeight: 600,
   },
   note: {
@@ -45,9 +55,6 @@ const styles = stylex.create({
     marginTop: tokens.spacingSmall,
   },
 });
-
-/** Placeholder recipient used only when none is supplied (demo mode). */
-const DEFAULT_RECIPIENT_DEVICE_ID = "00000000-0000-4000-8000-000000000000";
 
 /**
  * Props for {@link MessageComposer}.
@@ -106,17 +113,17 @@ export function MessageComposer(props: MessageComposerProps) {
       }
       if (error !== undefined) {
         if (!controller.signal.aborted) {
-          setStatus("Send failed.");
+          setStatus(SEND_FAILED_STATUS);
         }
         return;
       }
       if (!controller.signal.aborted) {
         setText("");
-        setStatus("Sent (demo / not E2EE).");
+        setStatus(SEND_SUCCESS_STATUS);
       }
     } catch {
       if (!controller.signal.aborted) {
-        setStatus("Send failed.");
+        setStatus(SEND_FAILED_STATUS);
       }
     } finally {
       if (controllerRef.current === controller) {

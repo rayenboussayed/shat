@@ -1,13 +1,13 @@
 import { Module } from "@nestjs/common";
 import { DatabaseModule } from "../db/db.ts";
-import { AuthService } from "../identity/auth.service.ts";
+import { AuthModule } from "../identity/auth.module.ts";
 import { MailboxController } from "./mailbox.controller.ts";
 import { MailboxService } from "./mailbox.service.ts";
 
 /** Wires mailbox controllers and services with the database module. */
 @Module({
-  imports: [DatabaseModule],
+  imports: [DatabaseModule, AuthModule],
   controllers: [MailboxController],
-  providers: [AuthService, MailboxService],
+  providers: [MailboxService],
 })
 export class MailboxModule {}

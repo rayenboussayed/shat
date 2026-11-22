@@ -1,13 +1,13 @@
 import { Module } from "@nestjs/common";
 import { DatabaseModule } from "../db/db.ts";
-import { AuthService } from "../identity/auth.service.ts";
+import { AuthModule } from "../identity/auth.module.ts";
 import { ConversationsController } from "./conversations.controller.ts";
 import { ConversationsService } from "./conversations.service.ts";
 
 /** Wires conversation controllers and services with the database module. */
 @Module({
-  imports: [DatabaseModule],
+  imports: [DatabaseModule, AuthModule],
   controllers: [ConversationsController],
-  providers: [AuthService, ConversationsService],
+  providers: [ConversationsService],
 })
 export class ConversationsModule {}

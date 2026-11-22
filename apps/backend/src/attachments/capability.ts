@@ -1,5 +1,6 @@
 import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
 
+import { UUID_PATTERN } from "../uuid.ts";
 import { decodeCanonicalBase64 } from "./encoding.ts";
 
 /** Minimum accepted length of a configured capability signing key, in bytes. */
@@ -7,8 +8,6 @@ const MIN_KEY_BYTES = 32;
 
 /** Injection token for the HMAC key that signs download capabilities. */
 export const ATTACHMENT_CAPABILITY_KEY = Symbol("ATTACHMENT_CAPABILITY_KEY");
-
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
 /**
  * Loads the HMAC key that signs download capabilities. Uses ATTACHMENT_CAPABILITY_KEY

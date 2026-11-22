@@ -1,12 +1,14 @@
 # SHAT
 
-Privacy-focused communication platform: end-to-end encrypted one-to-one
-messaging, app-to-app voice and video calls, encrypted file transfer, and two
-deliberately separate transport modes (Local and Online) behind one security
-layer. Specification: v1.0-draft (§0–§23). This repository implements the
-server, web and dashboard surfaces and the mobile skeleton; encrypted,
-peer-to-peer and native capabilities are scaffolded but **not** verified here
-(see "Unverified" below).
+Privacy-focused communication platform targeting end-to-end encrypted
+one-to-one messaging, app-to-app voice and video calls, encrypted file
+transfer, and two deliberately separate transport modes (Local and Online)
+behind one security layer. Specification: v1.0-draft (§0–§23). This repository
+implements the server, web and dashboard surfaces and the mobile skeleton.
+Transport is ciphertext-only scaffolding; **E2EE is not implemented** — ADR
+0006 defines an interface-only crypto facade with no algorithm chosen or
+certified. Peer-to-peer and native capabilities are scaffolded but **not**
+verified here (see "Unverified" below).
 
 ## Status
 
@@ -15,7 +17,15 @@ See `CHANGELOG.md` for one entry per subtask and `.agent-swarm/STATE.md` for the
 coordinator log. All quality gates (`npm run check`, `npm run test-cov`,
 `npm run build`, Compose config validation) exit 0 locally. `npm audit --omit=dev`
 is red with three moderate upstream `expo` advisories, accepted by the user with
-no override added.
+no override added. `npm audit fix` (no overrides, no audit-level change) made no
+lockfile changes: the project already pins undici 8.13.1 and brace-expansion
+5.0.13. A fresh Trivy 0.76.2 scan of the backend image still reports HIGH
+findings for undici/brace-expansion and unfixed Debian base packages; the npm
+ones come from the npm CLI bundled inside the pinned Node base image
+(`/usr/local/lib/node_modules/npm/node_modules/`), **not** from app
+dependencies. No override or floating base tag was added to hide them; clearing
+them needs a runtime base with a patched npm or a distroless runtime. The
+rebuilt web and dashboard images scan clean at HIGH/CRITICAL after `apk upgrade`.
 
 ## Stack
 
@@ -65,8 +75,8 @@ reverse proxy terminates TLS and maps real public ports.
 ### Test suites
 
 ```bash
-npm run test-unit                       # 165 passed, 9 skipped
-npm run test-integration                # 15 skipped without DATABASE_URL
+npm run test-unit                       # 171 passed, 9 skipped
+npm run test-integration                # 17 skipped without DATABASE_URL
 npm run test-e2e                        # 3 passed (typed API contract)
 npm run test-cov -- --coverage.reporter=text --coverage.reporter=json-summary
 npm run test-perf                       # vitest bench (no baseline files yet)
@@ -83,9 +93,9 @@ The true baseline (commit `f00088a`, before code changes) was **30.87%
 statements / 13.58% branches / 40.78% functions / 31.31% lines**, with baseline
 gates failing on missing database scripts and a TS5096 build error (repaired in
 P0). Coverage rose to 54.73% statements (P4) and 82.2% with a real database
-(P6). A final-tree run without `DATABASE_URL` is **78.12% statements
-(1064/1362), 65.31% branches, 82.53% functions, 78.37% lines**; with a real
-PostgreSQL the integration suites pass (15/15) and statement coverage rises to
+(P6). A final-tree run without `DATABASE_URL` is **77.63% statements
+(1156/1489), 63.87% branches, 83.12% functions, 77.74% lines**; with a real
+PostgreSQL the integration suites pass (20/20) and statement coverage rises to
 about 82%. The gap is largely `DATABASE_URL`-gated identity/prekey code. There
 are no configured coverage thresholds, so these numbers are reported, not
 enforced as gates; 95% global / 98% domain / 100% crypto remain recommended
@@ -116,7 +126,12 @@ DB setup, backups and rollback: **`docs/operations.md`** (the runbook).
 - Native mobile builds, SQLCipher on device, Wi-Fi Direct / Wi-Fi Aware, and
   CallKit/PushKit/Core-Telecom: no macOS runner, Android SDK or device here.
   EAS builds stay manual until signing credentials and a macOS runner exist; CI
-  will not report a green native build.
+  will not report a green native build. `eas build --local` still authenticates
+  to Expo and needs a linked project, so it is not an offline build. iOS builds
+  require macOS and Xcode and cannot be produced on Linux. A truly offline
+  Android build needs JDK 17, Android SDK 36 and build-tools 36.0.0; see
+  `docs/operations.md`. Signing material must be generated and kept outside the
+  repository.
 - End-to-end encryption: ADR 0006 fixes only the crypto **facade** boundary; no
   algorithm is chosen or certified and no E2EE claim is validated.
 - TURN interop with external peers: credential minting is tested, live media

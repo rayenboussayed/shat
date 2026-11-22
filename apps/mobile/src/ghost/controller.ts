@@ -2,9 +2,12 @@
  * Ghost Mode controller for the mobile app.
  */
 
+import { isGhostModeEnabled } from "shat-api-types";
+
 /** Upper bound on buffered messages per conversation; oldest are dropped first. */
 export const MAX_MESSAGES_PER_CONVERSATION = 1000;
 
+/** A message held in volatile memory by Ghost Mode. */
 export interface GhostMessage {
   readonly id: string;
   readonly conversationId: string;
@@ -12,10 +15,12 @@ export interface GhostMessage {
   readonly createdAt: string;
 }
 
+/** Abstraction over native lifecycle events used to clear Ghost Mode buffers. */
 export interface AppLifecycleSource {
   onBackground(callback: () => void): () => void;
 }
 
+/** Optional persistent store used when Ghost Mode is disabled. */
 export interface GhostPersistentStore {
   insert(message: {
     readonly id: string;
@@ -24,6 +29,7 @@ export interface GhostPersistentStore {
   }): Promise<void>;
 }
 
+/** Controller for the mobile Ghost Mode lifecycle and volatile buffer. */
 export class GhostModeController {
   private readonly defaultEnabled: boolean;
   private enabled: boolean;
@@ -35,7 +41,7 @@ export class GhostModeController {
     readonly defaultEnabled?: boolean;
     readonly lifecycle?: AppLifecycleSource;
   }) {
-    this.defaultEnabled = options?.defaultEnabled ?? true;
+    this.defaultEnabled = isGhostModeEnabled(options?.defaultEnabled);
     this.enabled = this.defaultEnabled;
     if (options?.lifecycle !== undefined) {
       this.unsubscribeBackground = options.lifecycle.onBackground(() => {
@@ -152,9 +158,3 @@ function createId(): string {
 }
 
 let counter = 0;
-
-export const GHOST_MODE_DEFAULT = true;
-
-export function isGhostModeEnabled(value: boolean | undefined): boolean {
-  return value ?? GHOST_MODE_DEFAULT;
-}

@@ -1,5 +1,6 @@
 import { mkdir, readFile, rm, writeFile } from "node:fs/promises";
 import { join, resolve } from "node:path";
+import { UUID_PATTERN } from "../uuid.ts";
 
 /** Injection token for the ciphertext blob store. */
 export const ATTACHMENT_STORAGE = Symbol("ATTACHMENT_STORAGE");
@@ -16,8 +17,6 @@ export interface AttachmentStorage {
   /** Removes a blob; succeeds when it is already gone. */
   remove(key: string): Promise<void>;
 }
-
-const STORAGE_KEY_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
 /** Local filesystem blob store rooted in a private directory. */
 export class FileSystemAttachmentStorage implements AttachmentStorage {
@@ -53,7 +52,7 @@ export class FileSystemAttachmentStorage implements AttachmentStorage {
   }
 
   private pathFor(key: string): string {
-    if (!STORAGE_KEY_PATTERN.test(key)) {
+    if (!UUID_PATTERN.test(key)) {
       throw new Error("Attachment storage key is not a generated identifier");
     }
     return join(this.root, key);

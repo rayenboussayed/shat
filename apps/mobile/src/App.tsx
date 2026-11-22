@@ -5,6 +5,7 @@ import { PaperProvider, Text } from "react-native-paper";
 import { Ionicons } from "@expo/vector-icons";
 import { appTheme } from "./theme.ts";
 import { api } from "./lib/api.ts";
+import { ChatScreen } from "./screens/ChatScreen.tsx";
 
 /**
  * Health status returned by the typed client.
@@ -43,8 +44,14 @@ export function App(): ReactElement {
       <SafeAreaProvider>
         <SafeAreaView>
           <Text variant="headlineMedium">SHAT</Text>
-          <Ionicons name="shield-checkmark" size={24} color={appTheme.colors.primary} />
+          <Ionicons
+            name="shield-checkmark"
+            size={24}
+            color={appTheme.colors.primary}
+            accessible={false}
+          />
           <Text>Health: {health}</Text>
+          <ChatScreen />
         </SafeAreaView>
       </SafeAreaProvider>
     </PaperProvider>

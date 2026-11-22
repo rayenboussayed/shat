@@ -6,7 +6,7 @@ import { AuthService } from "../identity/auth.service.ts";
 import type { Actor, SessionHeaders } from "../identity/schemas.ts";
 import { ConnectionRegistry } from "./connections.ts";
 import type { SignalingClient } from "./connections.ts";
-import { ConnectionRateLimiter, FailedAuthLimiter } from "./guards.ts";
+import { ConnectionRateLimiter, FailedAuthLimiter, KeyedRateLimiter, PreAuthLimiter } from "./guards.ts";
 import { MAX_EVENT_BYTES, SIGNAL_EVENT } from "./schemas.ts";
 import type { SignalingErrorCode } from "./schemas.ts";
 import { SignalingService } from "./signaling.service.ts";
@@ -16,6 +16,8 @@ import type { SignalingReply } from "./signaling.service.ts";
 export interface SignalingHandshake {
   headers: IncomingHttpHeaders;
   auth: Record<string, unknown>;
+  /** Socket remote address, used to isolate per-source rate limits. */
+  address?: string;
 }
 
 /** A connected socket with the handshake it was opened with. */
@@ -42,6 +44,12 @@ export function handshakeHeaders(handshake: SignalingHandshake): SessionHeaders 
   return typeof token === "string" && token.length > 0 ? { authorization: `Bearer ${token}` } : {};
 }
 
+/** Extracts the source key used to isolate rate limits; sockets without an address share one bucket. */
+function sourceAddress(client: SignalingSocket): string {
+  const address = client.handshake.address;
+  return typeof address === "string" && address.length > 0 ? address : "unknown";
+}
+
 /**
  * Signaling endpoint for call setup and ICE negotiation at /signaling.
  *
@@ -55,7 +63,8 @@ export class SignalingGateway implements OnGatewayConnection, OnGatewayDisconnec
   private readonly logger = new Logger("Signaling");
   private readonly sessions = new Map<SignalingClient, Actor>();
   private readonly limiters = new Map<string, ConnectionRateLimiter>();
-  private readonly failedAuth = new FailedAuthLimiter();
+  private readonly failedAuth = new KeyedRateLimiter(() => new FailedAuthLimiter());
+  private readonly preAuth = new KeyedRateLimiter(() => new PreAuthLimiter());
 
   constructor(
     private readonly auth: AuthService,
@@ -70,9 +79,15 @@ export class SignalingGateway implements OnGatewayConnection, OnGatewayDisconnec
    */
   async handleConnection(client: SignalingSocket): Promise<void> {
     const now = Date.now();
-    if (this.failedAuth.isFull(now)) {
+    const source = sourceAddress(client);
+    if (this.failedAuth.isFull(source, now)) {
       this.logger.log("event=connect outcome=auth-flood");
       this.refuse(client, "RATE_LIMITED", "Too many authentication attempts");
+      return;
+    }
+    if (!this.preAuth.take(source, now)) {
+      this.logger.log("event=connect outcome=connect-flood");
+      this.refuse(client, "RATE_LIMITED", "Too many connection attempts");
       return;
     }
     const actor = await this.auth.getAuthenticatedActor(handshakeHeaders(client.handshake));
@@ -80,7 +95,7 @@ export class SignalingGateway implements OnGatewayConnection, OnGatewayDisconnec
       return;
     }
     if (!actor) {
-      this.failedAuth.record(Date.now());
+      this.failedAuth.record(source, Date.now());
       this.logger.log("event=connect outcome=unauthenticated");
       this.refuse(client, "NOT_AUTHENTICATED", "Authentication is required");
       return;

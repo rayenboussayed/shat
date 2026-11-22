@@ -23,9 +23,17 @@ export default defineConfig({
       name: "shat-web-dev-csp",
       apply: "serve",
       transformIndexHtml(html: string): string {
-        return html.replace(
+        const withCsp = html.replace(
           /<meta http-equiv="Content-Security-Policy" content="[^"]*" \/>/,
           `<meta http-equiv="Content-Security-Policy" content="${developmentCsp}" />`,
+        );
+        // StyleX rules are served from a virtual module in dev only; production
+        // appends them to the CSS asset emitted from src/styles.css.
+        return withCsp.replace(
+          "</head>",
+          '    <link rel="stylesheet" href="/virtual:stylex.css" />\n' +
+            '    <script type="module" src="/@id/virtual:stylex:runtime"></script>\n' +
+            "  </head>",
         );
       },
     },

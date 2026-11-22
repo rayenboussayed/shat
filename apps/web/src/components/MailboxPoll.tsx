@@ -1,7 +1,7 @@
 import { createElement, useEffect, useState } from "react";
+import type { LoadState, MailboxMessage } from "shat-api-types";
+import { isMailboxPollResponse } from "shat-api-types";
 import { api } from "../lib/api.ts";
-import type { LoadState, MailboxMessage } from "../lib/messaging.ts";
-import { isMailboxPollResponse } from "../lib/messaging.ts";
 import * as stylex from "@stylexjs/stylex";
 import { tokens } from "../styles/tokens.stylex.ts";
 
@@ -13,7 +13,9 @@ const styles = stylex.create({
   },
   item: {
     padding: tokens.spacingSmall,
-    borderBottom: "1px solid #e5e7eb",
+    borderBottomWidth: tokens.borderWidthThin,
+    borderBottomStyle: "solid",
+    borderBottomColor: tokens.colorBorder,
     fontFamily: "monospace",
     wordBreak: "break-all",
   },

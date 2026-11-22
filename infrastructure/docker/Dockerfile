@@ -62,11 +62,15 @@ CMD ["sh", "-c", "npm run build -w apps/backend && (./node_modules/.bin/tsc -p a
 # ---------------------------------------------------------------------------
 FROM ${NODE_IMAGE} AS runtime
 WORKDIR /app/apps/backend
-# /tmp is world-writable, so uid 10001 can create the attachment root there;
-# the default var/attachments under /app/apps/backend is root-owned.
-ENV NODE_ENV=production PORT=3000 ATTACHMENT_STORAGE_DIR=/tmp/attachments
+# Ciphertext blobs go to /var/lib/shat/attachments (uid 10001). The directory is
+# created here and must be backed by a named volume in production Compose;
+# /tmp would be discarded on recreate and the default var/attachments under
+# /app/apps/backend is root-owned.
+ENV NODE_ENV=production PORT=3000 ATTACHMENT_STORAGE_DIR=/var/lib/shat/attachments
 RUN groupadd --gid 10001 shat \
- && useradd --uid 10001 --gid shat --shell /usr/sbin/nologin --no-create-home shat
+ && useradd --uid 10001 --gid shat --shell /usr/sbin/nologin --no-create-home shat \
+ && mkdir -p /var/lib/shat/attachments \
+ && chown -R 10001:10001 /var/lib/shat
 COPY --from=prod-deps --chown=10001:10001 /app/node_modules /app/node_modules
 # The pruned manifest makes "type": "module" explicit for the compiled ESM entry.
 COPY --from=prod-deps /app/package.json ./

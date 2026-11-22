@@ -12,9 +12,11 @@
       "expo-dev-client"
     ],
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.shat.app"
     },
     "android": {
+      "package": "com.shat.app",
       "adaptiveIcon": {
         "foregroundImage": "./assets/adaptive-icon.png",
         "backgroundColor": "#ffffff"

@@ -9,6 +9,11 @@ import { AppModule } from "../../src/app.module.js";
 import { AuthService } from "../../src/identity/auth.service.js";
 import { DatabaseService } from "../../src/db/db.js";
 import { mailboxMessages, conversations, conversationMembers, deliveryReceipts } from "../../src/db/db.js";
+import {
+  exceedsMailboxQuota,
+  MAILBOX_MAX_QUEUED_BYTES,
+  MAILBOX_MAX_QUEUED_MESSAGES,
+} from "../../src/mailbox/mailbox.service.js";
 
 const validToken = randomBytes(32).toString("base64url");
 const recipientToken = randomBytes(32).toString("base64url");
@@ -72,6 +77,7 @@ const mockDb = {
   }),
   transaction: async (callback: (tx: unknown) => Promise<unknown>) => {
     const tx = {
+      execute: async () => undefined,
       insert: () => ({ values: async () => undefined }),
       update: () => ({ set: () => ({ where: async () => undefined }) }),
       select: () => ({
@@ -282,5 +288,100 @@ describe("Mailbox and conversation routes (DB-free)", () => {
       },
     });
     expect(response.statusCode).toBe(403);
+  });
+
+  it("answers 413 when the fake database reports an exhausted recipient quota", async () => {
+    const usageDb = {
+      ...mockDb,
+      transaction: async (callback: (tx: unknown) => Promise<unknown>) => {
+        const tx = {
+          execute: async () => undefined,
+          select: (fields?: object) => ({
+            from: () => ({
+              where: () => ({
+                limit: async () =>
+                  fields && "count" in fields
+                    ? [{ count: String(MAILBOX_MAX_QUEUED_MESSAGES), bytes: "0" }]
+                    : [],
+              }),
+            }),
+          }),
+          insert: () => ({ values: async () => undefined }),
+        };
+        await callback(tx);
+      },
+    };
+    const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
+      .overrideProvider(DatabaseService)
+      .useValue({ db: usageDb, onApplicationShutdown: async () => undefined })
+      .overrideProvider(AuthService)
+      .useValue(mockAuth)
+      .compile();
+    const quotaApp: NestFastifyApplication = moduleRef.createNestApplication(new FastifyAdapter(buildApp()));
+    await quotaApp.init();
+    try {
+      const response = await quotaApp.inject({
+        method: "POST",
+        url: "/mailbox",
+        headers: { authorization: `Bearer ${validToken}` },
+        payload: {
+          recipientDeviceId,
+          envelope: Buffer.alloc(4, 5).toString("base64"),
+          expiry: new Date(Date.now() + 60_000).toISOString(),
+        },
+      });
+      expect(response.statusCode).toBe(413);
+      expect(response.json()).toMatchObject({ error: "Payload Too Large" });
+    } finally {
+      await quotaApp.close();
+    }
+  });
+
+  it("never returns an expired queued message from poll", async () => {
+    const expiredRow = { ...mockMessageRow, id: randomUUID(), expiresAt: new Date(Date.now() - 5_000) };
+    const liveRow = { ...mockMessageRow, id: randomUUID(), expiresAt: new Date(Date.now() + 60_000) };
+    const pollDb = {
+      select: () => ({
+        from: () => ({
+          where: () => ({
+            orderBy: () => ({
+              limit: async () => [expiredRow, liveRow],
+            }),
+          }),
+        }),
+      }),
+    };
+    const moduleRef = await Test.createTestingModule({ imports: [AppModule] })
+      .overrideProvider(DatabaseService)
+      .useValue({ db: pollDb, onApplicationShutdown: async () => undefined })
+      .overrideProvider(AuthService)
+      .useValue(mockAuth)
+      .compile();
+    const pollApp: NestFastifyApplication = moduleRef.createNestApplication(new FastifyAdapter(buildApp()));
+    await pollApp.init();
+    try {
+      const response = await pollApp.inject({
+        method: "GET",
+        url: "/mailbox",
+        headers: { authorization: `Bearer ${recipientToken}` },
+      });
+      expect(response.statusCode).toBe(200);
+      const messages = response.json<{ messages: { id: string }[] }>().messages;
+      expect(messages).toHaveLength(1);
+      expect(messages[0]?.id).toBe(liveRow.id);
+    } finally {
+      await pollApp.close();
+    }
+  });
+});
+
+describe("recipient quota bounds", () => {
+  it("admits usage under both bounds", () => {
+    expect(exceedsMailboxQuota(MAILBOX_MAX_QUEUED_MESSAGES - 1, MAILBOX_MAX_QUEUED_BYTES - 1)).toBe(false);
+  });
+
+  it("refuses at the message bound and past the envelope-byte bound", () => {
+    expect(exceedsMailboxQuota(MAILBOX_MAX_QUEUED_MESSAGES, 0)).toBe(true);
+    expect(exceedsMailboxQuota(0, MAILBOX_MAX_QUEUED_BYTES + 1)).toBe(true);
   });
 });

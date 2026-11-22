@@ -1,11 +1,12 @@
 import { Injectable } from "@nestjs/common";
-import { createHash, randomBytes, timingSafeEqual } from "node:crypto";
+import { randomBytes, timingSafeEqual } from "node:crypto";
 import { and, eq, gt, isNull } from "drizzle-orm";
 import { DatabaseService } from "../db/db.ts";
 import {
   devices,
   sessions,
 } from "../db/db.ts";
+import { decodeCanonicalBase64, sha256 } from "../encoding.ts";
 import type { SessionHeaders, Actor } from "./schemas.ts";
 
 /** Handles session token extraction, hashing and constant-time comparison. */
@@ -21,7 +22,7 @@ export class AuthService {
 
   /** Hashes a session or enrollment secret with SHA-256. */
   hashToken(token: string): Buffer {
-    return createHash("sha256").update(token).digest();
+    return sha256(Buffer.from(token, "utf8"));
   }
 
   /** Extracts a session token from headers, rejecting mixed or oversized inputs. */
@@ -100,17 +101,8 @@ export class AuthService {
 
   /** Decodes canonical base64 with an exact byte length. */
   decodeBase64(value: string, expectedByteLength: number): Buffer | undefined {
-    if (!/^[A-Za-z0-9+/]+={0,2}$/.test(value)) {
-      return undefined;
-    }
-    const decoded = Buffer.from(value, "base64");
-    if (
-      decoded.length !== expectedByteLength ||
-      decoded.toString("base64").replace(/=+$/, "") !== value.replace(/=+$/, "")
-    ) {
-      return undefined;
-    }
-    return decoded;
+    const decoded = decodeCanonicalBase64(value, expectedByteLength);
+    return decoded?.length === expectedByteLength ? decoded : undefined;
   }
 
   /** Looks up an active (non-revoked) device. */

@@ -28,10 +28,18 @@ on:
 permissions:
   contents: read
 
+# Cancel superseded runs for the same ref so a push to main does not leave an
+# older verification job competing with the new one.
+concurrency:
+  group: ci-${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
 jobs:
   verify:
     name: Check, test, build and validate
     runs-on: ubuntu-latest
+    # Bounds a hung test, benchmark or Compose pull instead of burning 6 hours.
+    timeout-minutes: 30
     env:
       DATABASE_URL: postgres://shat:shat@localhost:5432/shat
     services:
@@ -90,10 +98,15 @@ jobs:
       - name: Memory tests
         run: npm run test-mem
 
+      # Required gate: regenerates the OpenAPI contract and fails on any drift.
       - name: API contract drift check
         run: npm run gen:api:check
 
+      # Production Compose deliberately requires SHAT_IMAGE_TAG (no stale
+      # default), so provide a throwaway tag for syntax/config validation only.
       - name: Validate Compose files
+        env:
+          SHAT_IMAGE_TAG: sha-config-validation-only
         run: |
           docker compose -f infrastructure/docker/compose.development.yaml config >/dev/null
           docker compose -f infrastructure/docker/compose.production.yaml config >/dev/null

@@ -12,6 +12,7 @@ import { ConnectionRegistry } from "../../src/signaling/connections.ts";
 import {
   FailedAuthLimiter,
   MAX_FAILED_AUTH_ATTEMPTS,
+  MAX_PRE_AUTH_CONNECTIONS,
   ReplayGuard,
 } from "../../src/signaling/guards.ts";
 import { SIGNAL_EVENT } from "../../src/signaling/schemas.ts";
@@ -36,10 +37,10 @@ interface FakeSocket extends SignalingSocket {
   disconnect: Mock<(close?: boolean) => unknown>;
 }
 
-function fakeClient(authFields: Record<string, unknown> = {}): FakeSocket {
+function fakeClient(authFields: Record<string, unknown> = {}, address?: string): FakeSocket {
   return {
     connected: true,
-    handshake: { headers: {}, auth: authFields },
+    handshake: { headers: {}, auth: authFields, ...(address === undefined ? {} : { address }) },
     emit: vi.fn<(event: string, data: unknown) => boolean>(() => true),
     disconnect: vi.fn<(close?: boolean) => unknown>(),
   };
@@ -92,6 +93,54 @@ describe("signaling connect flood", () => {
         type: "signal.error",
         code: "RATE_LIMITED",
         message: "Too many authentication attempts",
+      });
+    } finally {
+      log.mockRestore();
+      lookup.mockRestore();
+    }
+  });
+
+  it("keeps one source's failed-auth flood from blocking another source", async () => {
+    const gateway = await setup();
+    const log = vi.spyOn(Logger.prototype, "log").mockImplementation(() => undefined);
+    const lookup = vi.spyOn(auth, "getAuthenticatedActor");
+    try {
+      for (let index = 0; index < MAX_FAILED_AUTH_ATTEMPTS; index += 1) {
+        await gateway.handleConnection(fakeClient({}, "203.0.113.1"));
+      }
+      const lookupsAfterFlood = lookup.mock.calls.length;
+      const otherSource = fakeClient({ token: TOKEN }, "203.0.113.2");
+
+      await gateway.handleConnection(otherSource);
+
+      expect(lookup.mock.calls.length).toBe(lookupsAfterFlood + 1);
+      expect(otherSource.disconnect).not.toHaveBeenCalled();
+      expect(otherSource.emit).toHaveBeenCalledWith(SIGNAL_EVENT, { type: "signal.ready" });
+    } finally {
+      log.mockRestore();
+      lookup.mockRestore();
+    }
+  });
+
+  it("caps pre-auth connection attempts per source before the database lookup", async () => {
+    const gateway = await setup();
+    const log = vi.spyOn(Logger.prototype, "log").mockImplementation(() => undefined);
+    const lookup = vi.spyOn(auth, "getAuthenticatedActor");
+    try {
+      for (let index = 0; index < MAX_PRE_AUTH_CONNECTIONS; index += 1) {
+        await gateway.handleConnection(fakeClient({ token: TOKEN }, "198.51.100.9"));
+      }
+      const lookupsAtCap = lookup.mock.calls.length;
+      expect(lookupsAtCap).toBe(MAX_PRE_AUTH_CONNECTIONS);
+      const extra = fakeClient({ token: TOKEN }, "198.51.100.9");
+
+      await gateway.handleConnection(extra);
+
+      expect(lookup.mock.calls.length).toBe(lookupsAtCap);
+      expect(extra.emit).toHaveBeenCalledWith(SIGNAL_EVENT, {
+        type: "signal.error",
+        code: "RATE_LIMITED",
+        message: "Too many connection attempts",
       });
     } finally {
       log.mockRestore();

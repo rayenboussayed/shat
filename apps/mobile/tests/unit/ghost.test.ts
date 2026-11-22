@@ -1,9 +1,8 @@
 import { describe, it, expect, vi } from "vitest";
+import { GHOST_MODE_DEFAULT, isGhostModeEnabled } from "shat-api-types";
 import {
   GhostModeController,
-  GHOST_MODE_DEFAULT,
   MAX_MESSAGES_PER_CONVERSATION,
-  isGhostModeEnabled,
 } from "../../src/ghost/controller.ts";
 
 describe("ghost mode", () => {

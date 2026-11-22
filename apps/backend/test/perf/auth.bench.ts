@@ -2,6 +2,7 @@ import { describe, expect, test } from "vitest";
 
 import { DatabaseService } from "../../src/db/db.ts";
 import { AuthService } from "../../src/identity/auth.service.ts";
+import { sha256 } from "../../src/encoding.ts";
 
 const auth = new AuthService(new DatabaseService());
 
@@ -31,6 +32,20 @@ describe("AuthService.hashToken", () => {
       expect(lastHashed?.byteLength).toBe(32);
     });
   }
+});
+
+describe("large decode and digest", () => {
+  const size = 512 * 1024;
+  const input = Buffer.alloc(size, 7).toString("base64");
+
+  test("decode and digest 512 KiB", async ({ bench }) => {
+    await bench("decode and digest 512 KiB", () => {
+      lastDecoded = auth.decodeBase64(input, size);
+      lastHashed = sha256(lastDecoded ?? Buffer.alloc(0));
+    }).run();
+    expect(lastDecoded?.byteLength).toBe(size);
+    expect(lastHashed?.byteLength).toBe(32);
+  });
 });
 
 describe("AuthService.newSessionToken", () => {

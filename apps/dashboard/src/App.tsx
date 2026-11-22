@@ -14,6 +14,12 @@ export function App(): ReturnType<typeof createElement> {
     "main",
     { "aria-label": "SHAT operations dashboard" },
     createElement("h1", null, "SHAT Operations Dashboard"),
+    createElement(
+      "aside",
+      { role: "alert", "data-testid": "auth-warning" },
+      "Warning: this dashboard has no built-in authentication or authorization. " +
+        "It must be deployed behind an authenticating reverse proxy and must not be exposed publicly.",
+    ),
     createElement(HealthStatus),
     createElement(MetricsPanel),
     createElement(RouteList),

@@ -35,16 +35,16 @@ describe("AuthService memory", () => {
     const auth = new AuthService(new DatabaseService());
     collect();
     const before = process.memoryUsage().heapUsed;
-    const values: Buffer[] = [];
+    let lastHash: Buffer | undefined;
     for (let index = 0; index < 20_000; index += 1) {
-      values.push(auth.hashToken(`token-${index}`));
+      lastHash = auth.hashToken(`token-${index}`);
     }
     collect();
     const after = process.memoryUsage().heapUsed;
-    expect(values.length).toBe(20_000);
-    expect(values.at(-1)?.byteLength).toBe(32);
+    // Only the last digest is retained, so a leak in the shared helper would still show up here.
+    expect(lastHash?.byteLength).toBe(32);
     if (canCollect()) {
-      expect(after - before).toBeLessThan(64 * 1024 * 1024);
+      expect(after - before).toBeLessThan(4 * 1024 * 1024);
     }
   });
 });

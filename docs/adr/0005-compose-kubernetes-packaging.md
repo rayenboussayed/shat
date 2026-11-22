@@ -31,20 +31,24 @@ carry secrets, must run as non-root, and must be rebuildable from pinned bases.
   Backend dev runs `tsc --watch` plus `node --watch` because `@nestjs/cli` is
   not a dependency; ports are 31001:3000, 31002:5173, 31003:5173.
 - `infrastructure/docker/compose.production.yaml` (`name: shat-prod`) has no bind
-  mounts, uses `image:` keys `${SHAT_REGISTRY:-}shat-*:${SHAT_IMAGE_TAG:-2ae5e8f}`,
+  mounts, uses `image:` keys
+  `${SHAT_REGISTRY:-}shat-*:${SHAT_IMAGE_TAG:?SHAT_IMAGE_TAG must be a sha-<commit> tag}`,
   `restart: unless-stopped`, healthchecks, and ports 31004:3000, 31005:8080,
   31006:8080. `SHAT_REGISTRY` is an optional registry namespace (include the
-  trailing slash) so `make docker-push` has a target. `SHAT_IMAGE_TAG` must be a
-  tag — for example an immutable commit SHA; a full digest after ':' is not a
-  valid image reference and cannot be used here. Rollback is a redeploy with the
-  previous tag. Immutability guaranteed here is tag-level, not digest-level.
+  trailing slash) so `make docker-push` has a target. `SHAT_IMAGE_TAG` has **no
+  default** and must be an immutable `sha-<commit>` tag; Compose fails loudly
+  when it is unset so a stale tag (such as the old `sha-2ae5e8f`) cannot be
+  deployed. A full digest after ':' is not a valid image reference and cannot be
+  used here. Rollback is a redeploy with the previous tag. Immutability
+  guaranteed here is tag-level, not digest-level.
 - All images are multi-stage. Backend compiles TypeScript in a build stage and
   copies only pruned production dependencies and `dist` into a runtime stage
   with explicit UID/GID 10001, an exec-form `CMD`, a copied `package.json` so
-  `"type": "module"` is explicit, `ATTACHMENT_STORAGE_DIR=/tmp/attachments`
-  (the default `var/attachments` is root-owned), and a `node -e fetch` health
-  check on `/health`. SPAs are built by Vite with `VITE_API_BASE_URL` as a build
-  arg and served by pinned nginx:alpine as uid 101:101 with a `wget` healthcheck.
+  `"type": "module"` is explicit, `ATTACHMENT_STORAGE_DIR=/var/lib/shat/attachments`
+  (created and chowned to uid 10001 in the image; the default `var/attachments`
+  is root-owned), and a `node -e fetch` health check on `/health`. SPAs are built
+  by Vite with `VITE_API_BASE_URL` as a build arg and served by pinned
+  nginx:alpine as uid 101:101 with a `wget` healthcheck and an HTTP CSP header.
 - Base images are pinned with tag **and** digest
   (`node:26.13.1-bookworm-slim@sha256:…`, `nginx:alpine@sha256:…`,
   `postgres:16-alpine@sha256:…`) and every postgres volume is named. The digest
@@ -52,7 +56,11 @@ carry secrets, must run as non-root, and must be rebuildable from pinned bases.
   Docker Hub tag API on 2026-11-22; a stale postgres digest was corrected.
 - Secrets are `${VAR:-}` environment substitutions with empty defaults: builds
   and `config` work offline, while runtime secret validation fails closed until
-  the deploy environment supplies real values. No secret is in a layer.
+  the deploy environment supplies real values. No secret is in a layer. The
+  backend reads these from `process.env` with no `*_FILE` support, so Compose
+  `secrets:` file mounts would be unreadable; a real deployment must inject them
+  from a secret manager (see the "Secret handling limitation" section of
+  `docs/operations.md`).
 - Kubernetes manifests stay a separate deployment surface (spec §17); this
   ADR fixes the image contract they must consume.
 

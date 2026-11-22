@@ -2,10 +2,14 @@
 #
 # Images are tagged from SHAT_IMAGE_TAG, which must be a *tag* (for example an
 # immutable commit SHA); a full digest after ':' is not a valid image reference.
-# SHAT_REGISTRY is an optional registry namespace prefix (include the trailing
-# slash, e.g. registry.example.com/shat/); 2ae5e8f is only a local default.
+# SHAT_IMAGE_TAG has no default: Compose fails loudly when it is unset so a
+# stale or accidental image can never be deployed. Set it explicitly, e.g.
+# SHAT_IMAGE_TAG=sha-<git-sha>. SHAT_REGISTRY is an optional registry namespace
+# prefix (include the trailing slash, e.g. registry.example.com/shat/).
 # Secrets come from the deploy environment via ${VAR:-}; nothing is baked into
-# an image or this file. Empty values make the backend fail closed.
+# an image or this file. The backend reads tokens from process.env only (no
+# *_FILE support), so a real deployment must source these values from a secret
+# manager; see docs/operations.md. Empty values make the backend fail closed.
 # DinD forwards only 31000-31099: backend 31004:3000, web 31005:8080,
 # dashboard 31006:8080. Terminate TLS and map real ports in the reverse proxy.
 
@@ -29,7 +33,7 @@ services:
     restart: unless-stopped
 
   backend:
-    image: ${SHAT_REGISTRY:-}shat-backend:${SHAT_IMAGE_TAG:-sha-2ae5e8f}
+    image: ${SHAT_REGISTRY:-}shat-backend:${SHAT_IMAGE_TAG:?SHAT_IMAGE_TAG must be a sha-<commit> tag}
     build:
       context: ../..
       dockerfile: infrastructure/docker/Dockerfile
@@ -39,13 +43,20 @@ services:
       PORT: "${PORT:-3000}"
       DATABASE_URL: ${DATABASE_URL:-postgres://shat:${POSTGRES_PASSWORD:-}@postgres:5432/${POSTGRES_DB:-shat}}
       CORS_ORIGINS: ${CORS_ORIGINS:-http://localhost:31005,http://localhost:31006}
+      # Token secrets stay as env vars because the backend has no *_FILE reader;
+      # source them from a secret manager in the deploy environment (see the
+      # header comment and docs/operations.md). Never write real values here.
       SHAT_ENROLLMENT_TOKEN: ${SHAT_ENROLLMENT_TOKEN:-}
       SHAT_ENROLLMENT_USER_ID: ${SHAT_ENROLLMENT_USER_ID:-00000000-0000-4000-8000-000000000000}
       TURN_SECRET: ${TURN_SECRET:-}
       TURN_URIS: ${TURN_URIS:-turn:localhost:3478}
       SHAT_ADMIN_TOKEN: ${SHAT_ADMIN_TOKEN:-}
+      ATTACHMENT_STORAGE_DIR: /var/lib/shat/attachments
       EXPO_PUBLIC_API_BASE_URL: ${EXPO_PUBLIC_API_BASE_URL:-http://localhost:31004}
       VITE_API_BASE_URL: ${VITE_API_BASE_URL:-http://localhost:31004}
+    volumes:
+      # Ciphertext blobs must survive container recreation.
+      - shat-attachments-prod:/var/lib/shat/attachments
     ports:
       - "31004:${PORT:-3000}"
     depends_on:
@@ -64,7 +75,7 @@ services:
     restart: unless-stopped
 
   web:
-    image: ${SHAT_REGISTRY:-}shat-web:${SHAT_IMAGE_TAG:-sha-2ae5e8f}
+    image: ${SHAT_REGISTRY:-}shat-web:${SHAT_IMAGE_TAG:?SHAT_IMAGE_TAG must be a sha-<commit> tag}
     build:
       context: ../..
       dockerfile: infrastructure/docker/Dockerfile.web
@@ -85,7 +96,7 @@ services:
     restart: unless-stopped
 
   dashboard:
-    image: ${SHAT_REGISTRY:-}shat-dashboard:${SHAT_IMAGE_TAG:-sha-2ae5e8f}
+    image: ${SHAT_REGISTRY:-}shat-dashboard:${SHAT_IMAGE_TAG:?SHAT_IMAGE_TAG must be a sha-<commit> tag}
     build:
       context: ../..
       dockerfile: infrastructure/docker/Dockerfile.dashboard
@@ -107,3 +118,4 @@ services:
 
 volumes:
   shat-postgres-prod: null
+  shat-attachments-prod: null

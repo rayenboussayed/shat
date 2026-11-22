@@ -80,3 +80,47 @@ entry per subtask. Date format: `YYYY-MM-DD`. Build-phase subtasks use the
 - **CI/docs (P14) — 2026-11-22**: Hardened PR and release workflows, final
   architecture and runbook, accurate ADR index and the crypto-facade ADR.
   No app code changed.
+
+## Final accepted fixes (Implementer C) — 2026-11-22
+
+- **Docs honesty**: README no longer claims end-to-end encryption; it states
+  ciphertext transport scaffolding and the interface-only crypto facade
+  (ADR 0006). Unit/integration counts and the final no-DB coverage figures were
+  updated; coverage thresholds remain unenforced. Added the Expo-auth, macOS
+  iOS and Gradle/JDK/Android-SDK prerequisites for local mobile builds.
+- **Local builds**: `docs/operations.md` gained a "Local mobile builds" section
+  (`eas build --local` still authenticates and needs a linked project; offline
+  Android via `expo prebuild` + `./gradlew :app:assembleRelease` with JDK 17,
+  Android SDK 36, build-tools 36.0.0; iOS needs macOS/Xcode; signing material
+  stays outside the repo), the `ATTACHMENT_CAPABILITY_KEY` env row and a secret
+  handling limitation note (ADRs 0009 and 0005).
+- **Attachment persistence**: backend runtime creates and chowns
+  `/var/lib/shat/attachments` (uid 10001) and production Compose mounts named
+  volume `shat-attachments-prod` there (ADR 0007). Smoke test confirmed the
+  mount, uid-10001 write/read and `/health` 200.
+- **Secret handling**: the backend reads tokens only from `process.env` (no
+  `*_FILE`), so Compose `secrets:` file mounts would be unreadable. Env injection
+  is kept with explicit comments and a runbook note that a secret manager must
+  populate the deploy environment; no secret is in the repo or an image layer.
+- **CSP**: nginx now sends an HTTP `Content-Security-Policy` with
+  `frame-ancestors 'none'`, `base-uri 'self'`, `object-src 'none'`,
+  `default-src 'self'` and `style-src 'self'` for the extracted stylesheet; no
+  localhost origins are hardcoded (ADR 0008). Verified with `curl -I` on web and
+  dashboard.
+- **Image tag**: production Compose requires `SHAT_IMAGE_TAG` (`:?` error) so the
+  stale `sha-2ae5e8f` default cannot be deployed; config validation in CI and
+  `make compose-config` supplies a throwaway tag (ADR 0005).
+- **SPA vulnerabilities**: `apk upgrade --no-cache` was added to both SPA
+  runtime stages; libxml2 2.13.9-r2 → 2.13.9-r3. Trivy 0.76.2 reports **0**
+  HIGH/CRITICAL findings for the rebuilt web and dashboard images.
+- **Backend npm advisories (residual, honest)**: `npm audit fix` with no
+  overrides/audit-level change made **no** lockfile changes — the project
+  already pins undici 8.13.1 and brace-expansion 5.0.13. A fresh backend image
+  rebuild and Trivy scan still report HIGH npm findings because they originate
+  in the npm CLI bundled into the pinned Node base image, not in app
+  dependencies; unfixed Debian base-package findings also remain. No override
+  or floating base was added to mask them. Clearing them requires a patched npm
+  in the runtime base or a distroless runtime. `npm audit --omit=dev` still has
+  the three user-accepted moderate `expo` advisories.
+- **CI**: `pr.yml` gained top-level `concurrency` and a 30-minute job timeout;
+  `gen:api:check` remains a required gate. Action SHA pins are unchanged.

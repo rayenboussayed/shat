@@ -1,13 +1,14 @@
 import { Catch, Logger, ServiceUnavailableException } from "@nestjs/common";
 import type { ArgumentsHost, ExceptionFilter } from "@nestjs/common";
 import type { FastifyReply, FastifyRequest } from "fastify";
+import { matchesPrefix } from "../path-matching.ts";
 
 /** Operator route prefixes whose 503 bodies carry requestId, like the global envelope. */
-const OPERATOR_PREFIXES = ["/admin", "/telemetry"];
+const OPERATOR_PREFIXES = ["/admin", "/telemetry"] as const;
 
 /** True for operator routes; public routes such as /turn keep the identity envelope without requestId. */
 function isOperatorPath(path: string): boolean {
-  return OPERATOR_PREFIXES.some((prefix) => path === prefix || path.startsWith(`${prefix}/`));
+  return matchesPrefix(path, OPERATOR_PREFIXES);
 }
 
 /**

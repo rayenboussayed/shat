@@ -66,6 +66,8 @@ describe("Fastify application", () => {
       message: "The request is invalid",
     });
     expect(response.json()).not.toHaveProperty("requestId");
+    expect(response.json()).not.toHaveProperty("code");
     expect(response.body).not.toContain("required property");
+    expect(response.body).not.toContain("FST_ERR_VALIDATION");
   });
 });

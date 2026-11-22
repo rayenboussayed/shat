@@ -7,7 +7,7 @@ import { MessageComposer } from "../../src/components/MessageComposer.tsx";
 import { MailboxPoll } from "../../src/components/MailboxPoll.tsx";
 import { SafetyNumberPanel } from "../../src/components/SafetyNumberPanel.tsx";
 import { derivePlaceholderEnvelope } from "../../src/lib/envelope.ts";
-import { isGhostModeEnabled, GHOST_MODE_DEFAULT } from "../../src/lib/ghost.ts";
+import { isGhostModeEnabled, GHOST_MODE_DEFAULT } from "shat-api-types";
 
 vi.mock("../../src/lib/api.ts", () => ({
   api: {

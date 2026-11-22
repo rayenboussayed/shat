@@ -1,10 +1,11 @@
 /**
- * Client-side shapes for mailbox and conversation responses.
+ * Client-side shapes and runtime guards for mailbox and conversation responses.
  *
- * The generated OpenAPI types do not declare response bodies for these routes
- * (the backend replies through Fastify's reply object), so these interfaces
- * mirror the backend service output and are used to narrow the typed client's
- * `data` value with a documented runtime guard.
+ * The generated OpenAPI types do not declare response bodies for these routes,
+ * so these interfaces mirror the backend service output. The guards narrow the
+ * typed client's `data` value without trusting the network payload.
+ *
+ * This module is dependency-free and shared by the web and mobile clients.
  */
 
 /** Shared loading state for mailbox and conversation views. */

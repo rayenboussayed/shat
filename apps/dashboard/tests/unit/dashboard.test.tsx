@@ -60,6 +60,21 @@ describe("dashboard shell", () => {
     root.unmount();
   });
 
+  it("warns that the dashboard has no built-in authentication", async () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    await act(async () => {
+      root.render(createElement(App));
+    });
+    const warning = container.querySelector('[data-testid="auth-warning"]');
+    expect(warning).not.toBeNull();
+    expect(warning?.getAttribute("role")).toBe("alert");
+    expect(warning?.textContent).toContain("no built-in authentication or authorization");
+    expect(warning?.textContent).toContain("must not be exposed publicly");
+    root.unmount();
+  });
+
   it("requests health through the typed client", async () => {
     const container = document.createElement("div");
     document.body.appendChild(container);

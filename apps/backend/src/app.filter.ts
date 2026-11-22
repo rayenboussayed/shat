@@ -28,6 +28,33 @@ export function codeOf(exception: unknown): string {
   return "INTERNAL_ERROR";
 }
 
+/**
+ * Error codes that may be echoed in a public body. Empty: framework codes such as
+ * FST_ERR_VALIDATION describe internals and are never returned to callers.
+ */
+const PUBLIC_DOMAIN_CODES = new Set<string>();
+
+/**
+ * Builds the single fixed public error body for a status. The internal error code
+ * is used only for the optional, strict allowlist of domain codes and for logging
+ * by the caller; it is never echoed by default.
+ */
+export function buildErrorBody(status: number, exception: unknown): Record<string, unknown> {
+  const publicError =
+    status === 500
+      ? { error: "Internal Server Error", message: "An unexpected error occurred" }
+      : (publicErrors.get(status) ?? {
+          error: "Request Failed",
+          message: "The request could not be completed",
+        });
+  const body: Record<string, unknown> = { statusCode: status, ...publicError };
+  const code = codeOf(exception);
+  if (status !== 500 && PUBLIC_DOMAIN_CODES.has(code)) {
+    body.code = code;
+  }
+  return body;
+}
+
 /** Converts thrown exceptions into the public API error envelope. */
 @Catch()
 @Injectable()
@@ -47,22 +74,13 @@ export class AllExceptionsFilter implements ExceptionFilter {
     const statusCode =
       rawStatus !== undefined && rawStatus >= 400 && rawStatus < 500 ? rawStatus : 500;
 
-    const publicError =
-      statusCode === 500
-        ? { error: "Internal Server Error", message: "An unexpected error occurred" }
-        : (publicErrors.get(statusCode) ?? {
-            error: "Request Failed",
-            message: "The request could not be completed",
-          });
-
     request.log.error(
       { statusCode, errorCode: codeOf(exception) },
       "Request failed",
     );
 
     reply.code(statusCode).send({
-      statusCode,
-      ...publicError,
+      ...buildErrorBody(statusCode, exception),
       requestId: request.id,
     });
   }

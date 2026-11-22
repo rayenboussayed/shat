@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isGhostModeEnabled, GHOST_MODE_DEFAULT } from "../../src/lib/ghost.ts";
+import { isGhostModeEnabled, GHOST_MODE_DEFAULT } from "shat-api-types";
 
 describe("ghost mode", () => {
   it("defaults to on", () => {

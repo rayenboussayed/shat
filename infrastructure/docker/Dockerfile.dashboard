@@ -35,6 +35,9 @@ EXPOSE 5173
 CMD ["npm", "run", "dev", "-w", "apps/dashboard", "--", "--host", "0.0.0.0"]
 
 FROM ${NGINX_IMAGE} AS runtime
+# Pick up patched Alpine packages (e.g. libxml2) without changing the pinned base
+# tag; the upgraded layer is a new image digest.
+RUN apk upgrade --no-cache
 COPY infrastructure/docker/nginx.conf /etc/nginx/nginx.conf
 COPY --from=build /app/apps/dashboard/dist /usr/share/nginx/html
 RUN mkdir -p /tmp/nginx \

@@ -56,7 +56,8 @@ export class AttachmentsService {
     if (ciphertext.length > ATTACHMENT_LIMITS.maxCiphertextBytes) {
       throw new PayloadTooLargeException("The ciphertext exceeds the size limit");
     }
-    this.verifyDigest(ciphertext, body.digestSha256);
+    const digest = sha256(ciphertext);
+    this.verifyDigest(digest, body.digestSha256);
     const expiresAt = this.parseExpiry(body.expiresAt, Date.now());
 
     const id = randomUUID();
@@ -69,7 +70,7 @@ export class AttachmentsService {
         storageKey,
         sizeBytes: ciphertext.length,
         contentType: body.contentType,
-        digest: sha256(ciphertext),
+        digest,
         expiresAt,
       });
     } catch (error) {
@@ -156,12 +157,12 @@ export class AttachmentsService {
     return actor;
   }
 
-  private verifyDigest(ciphertext: Uint8Array, encodedDigest: string): void {
+  private verifyDigest(digest: Uint8Array, encodedDigest: string): void {
     const expected = decodeCanonicalBase64(encodedDigest);
     if (!expected || expected.length !== 32) {
       throw new BadRequestException("The digest is invalid");
     }
-    if (!digestsEqual(sha256(ciphertext), expected)) {
+    if (!digestsEqual(digest, expected)) {
       throw new BadRequestException("The digest does not match the ciphertext");
     }
   }

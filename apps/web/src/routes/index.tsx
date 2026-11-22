@@ -1,8 +1,8 @@
 import { createElement } from "react";
 import { Link, createFileRoute } from "@tanstack/react-router";
 import { useEffect, useState } from "react";
+import { isGhostModeEnabled } from "shat-api-types";
 import { api } from "../lib/api.ts";
-import { isGhostModeEnabled } from "../lib/ghost.ts";
 import * as stylex from "@stylexjs/stylex";
 import { tokens } from "../styles/tokens.stylex.ts";
 

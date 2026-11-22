@@ -7,6 +7,7 @@ import {
   eq,
   gt,
   isNull,
+  sql,
 } from "drizzle-orm";
 import { DatabaseService } from "../db/db.ts";
 import {
@@ -28,6 +29,15 @@ import type {
 /** Longest accepted mailbox retention, matching attachment uploads (30 days). */
 const MAX_MAILBOX_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
 
+/** Bounds on live queued envelopes held for one recipient device. */
+export const MAILBOX_MAX_QUEUED_MESSAGES = 1000;
+export const MAILBOX_MAX_QUEUED_BYTES = 64 * 1024 * 1024;
+
+/** True when a recipient's live queued usage leaves no room for another envelope. */
+export function exceedsMailboxQuota(count: number, bytes: number): boolean {
+  return count >= MAILBOX_MAX_QUEUED_MESSAGES || bytes > MAILBOX_MAX_QUEUED_BYTES;
+}
+
 const publicError = (statusCode: number) => {
   const map: Record<number, { error: string; message: string }> = {
     400: { error: "Bad Request", message: "The request is invalid" },
@@ -35,6 +45,7 @@ const publicError = (statusCode: number) => {
     403: { error: "Forbidden", message: "The request is not permitted" },
     404: { error: "Not Found", message: "The requested resource was not found" },
     409: { error: "Conflict", message: "The request conflicts with current state" },
+    413: { error: "Payload Too Large", message: "The request payload is too large" },
   };
   return { statusCode, ...map[statusCode] };
 };
@@ -136,8 +147,12 @@ export class MailboxService {
 
     type MailboxRow = typeof mailboxMessages.$inferSelect;
     let resultRow: MailboxRow | undefined;
+    let quotaExceeded = false;
 
     await db.transaction(async (transaction) => {
+      await transaction.execute(
+        sql`select pg_advisory_xact_lock(hashtextextended(${body.recipientDeviceId}::text, 0))`,
+      );
       const [duplicate] = await transaction
         .select()
         .from(mailboxMessages)
@@ -156,6 +171,26 @@ export class MailboxService {
         resultRow = duplicate;
         return;
       }
+
+      const [usage] = await transaction
+        .select({
+          count: sql<string>`count(*)::text`,
+          bytes: sql<string>`coalesce(sum(octet_length(${mailboxMessages.envelope})), 0)::text`,
+        })
+        .from(mailboxMessages)
+        .where(
+          and(
+            eq(mailboxMessages.recipientDeviceId, body.recipientDeviceId),
+            eq(mailboxMessages.status, "queued"),
+            gt(mailboxMessages.expiresAt, now),
+          ),
+        )
+        .limit(1);
+      if (exceedsMailboxQuota(Number(usage?.count ?? 0), Number(usage?.bytes ?? 0) + envelopeBuffer.length)) {
+        quotaExceeded = true;
+        return;
+      }
+
       await transaction.insert(mailboxMessages).values({
         id: messageId,
         recipientDeviceId: body.recipientDeviceId,
@@ -181,6 +216,9 @@ export class MailboxService {
       } as MailboxRow;
     });
 
+    if (quotaExceeded) {
+      return { status: 413, body: publicError(413) };
+    }
     if (!resultRow) {
       return { status: 500, body: { statusCode: 500, error: "Internal Server Error", message: "An unexpected error occurred" } };
     }
@@ -226,10 +264,20 @@ export class MailboxService {
       .orderBy(asc(mailboxMessages.enqueuedAt))
       .limit(limit);
 
+    // The SQL predicate above already excludes expired rows; re-checking here keeps
+    // the guarantee explicit and testable when the storage layer returns stale rows.
+    const liveRows = rows.filter((row) => {
+      const expiresAt =
+        row.expiresAt instanceof Date
+          ? row.expiresAt.getTime()
+          : Date.parse(String(row.expiresAt));
+      return expiresAt > now.getTime();
+    });
+
     return {
       status: 200,
       body: {
-        messages: rows.map((row) => ({
+        messages: liveRows.map((row) => ({
           id: row.id,
           recipientDeviceId: row.recipientDeviceId,
           conversationId: row.conversationId,

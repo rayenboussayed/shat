@@ -13,7 +13,7 @@ help:
 	@echo "  setup         install + check"
 	@echo "  check         npm run check (typecheck + lint + knip + root tests)"
 	@echo "  lint          eslint over the repo"
-	@echo "  typecheck     tsc -b tsconfig.base.json + workspace typechecks"
+	@echo "  typecheck     tsc -p tsconfig.root.json --noEmit + workspace typechecks"
 	@echo "  test          all tests (root + workspaces)"
 	@echo "  test-unit     unit tests"
 	@echo "  test-integration  integration tests"
@@ -123,7 +123,8 @@ health:
 
 compose-config:
 	docker compose -f infrastructure/docker/compose.development.yaml config > /dev/null
-	docker compose -f infrastructure/docker/compose.production.yaml config > /dev/null
+	# Production Compose has no default image tag; a throwaway tag validates syntax only.
+	SHAT_IMAGE_TAG=sha-config-validation-only docker compose -f infrastructure/docker/compose.production.yaml config > /dev/null
 
 docker-build:
 	docker compose -f infrastructure/docker/compose.production.yaml build

@@ -20,6 +20,15 @@ revisit trigger. The authoritative list of required topics is
 - [0006 Crypto facade boundary](0006-crypto-facade.md) —
   required topic 2, facade only: a reviewed-operations interface with no
   algorithm chosen or certified.
+- [0007 Persistent ciphertext attachment volume](0007-attachment-persistence-volume.md) —
+  supporting decision for topic 9: named production volume so blobs survive
+  container recreation.
+- [0008 HTTP Content-Security-Policy for the SPAs](0008-http-csp-for-spa.md) —
+  supporting decision for the web/dashboard deployment contract: real HTTP CSP
+  because meta `frame-ancestors` is ignored.
+- [0009 Local and offline mobile builds](0009-offline-mobile-builds.md) —
+  supporting decision documenting the Expo-auth limitation, the Gradle offline
+  Android path and the macOS-only iOS path.
 
 ## Required topics decided without a standalone ADR file
 

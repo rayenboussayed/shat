@@ -1,6 +1,6 @@
 import { Module } from "@nestjs/common";
 import { DatabaseModule } from "../db/db.ts";
-import { AuthService } from "../identity/auth.service.ts";
+import { AuthModule } from "../identity/auth.module.ts";
 import { CallRegistry } from "./call-state.ts";
 import { ConnectionRegistry } from "./connections.ts";
 import { ReplayGuard } from "./guards.ts";
@@ -9,7 +9,7 @@ import { SignalingService } from "./signaling.service.ts";
 
 /** Wires the signaling gateway with its in-memory call, presence and replay state. */
 @Module({
-  imports: [DatabaseModule],
-  providers: [AuthService, ConnectionRegistry, CallRegistry, ReplayGuard, SignalingService, SignalingGateway],
+  imports: [DatabaseModule, AuthModule],
+  providers: [ConnectionRegistry, CallRegistry, ReplayGuard, SignalingService, SignalingGateway],
 })
 export class SignalingModule {}

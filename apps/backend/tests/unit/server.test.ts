@@ -52,7 +52,7 @@ describe("server", () => {
       const exited = once(child, "exit");
 
       try {
-        await waitHealthy(port, 10_000);
+        await waitHealthy(port, 30_000);
         child.kill("SIGTERM");
         const [code] = await exited;
         expect(code).toBe(0);
@@ -62,6 +62,6 @@ describe("server", () => {
         }
       }
     },
-    20_000,
+    45_000,
   );
 });

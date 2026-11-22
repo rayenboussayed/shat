@@ -9,12 +9,16 @@ import { useEffect, useRef, useState } from "react";
 import type { ReactElement } from "react";
 import { AppState, View } from "react-native";
 import { Button, Text, TextInput } from "react-native-paper";
+import {
+  DEFAULT_RECIPIENT_DEVICE_ID,
+  DEMO_ENVELOPE_LABEL,
+  SEND_FAILED_STATUS,
+  SEND_SUCCESS_STATUS,
+  isConversationListResponse,
+} from "shat-api-types";
+import type { LoadState } from "shat-api-types";
 import { api } from "../lib/api.ts";
-import { isConversationListResponse } from "../lib/messaging.ts";
-import type { LoadState } from "../lib/messaging.ts";
 import { GhostModeController } from "../ghost/controller.ts";
-
-const DEFAULT_RECIPIENT_DEVICE_ID = "00000000-0000-4000-8000-000000000000";
 
 /**
  * Chat screen component.
@@ -114,18 +118,18 @@ export function ChatScreen(): ReactElement {
       }
       if (error !== undefined) {
         if (!controller.signal.aborted) {
-          setStatus("Send failed.");
+          setStatus(SEND_FAILED_STATUS);
         }
         return;
       }
       ghost.store(selected ?? "default", trimmed);
       if (!controller.signal.aborted) {
         setText("");
-        setStatus("Sent (demo / not E2EE).");
+        setStatus(SEND_SUCCESS_STATUS);
       }
     } catch {
       if (!controller.signal.aborted) {
-        setStatus("Send failed.");
+        setStatus(SEND_FAILED_STATUS);
       }
     } finally {
       sendControllerRef.current = null;
@@ -156,7 +160,7 @@ export function ChatScreen(): ReactElement {
           {id}
         </Button>
       ))}
-      <Text accessibilityLabel="Demo, not end-to-end encrypted">demo / not E2EE</Text>
+      <Text accessibilityLabel="Demo, not end-to-end encrypted">{DEMO_ENVELOPE_LABEL}</Text>
       <TextInput
         label="Message (demo, not encrypted)"
         value={text}
@@ -171,7 +175,11 @@ export function ChatScreen(): ReactElement {
       >
         {sending ? "Sending…" : "Send"}
       </Button>
-      {status !== null ? <Text accessibilityRole="status">{status}</Text> : null}
+      {status !== null ? (
+        <Text accessible accessibilityLiveRegion="polite">
+          {status}
+        </Text>
+      ) : null}
     </View>
   );
 }

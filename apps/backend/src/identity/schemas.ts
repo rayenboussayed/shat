@@ -35,6 +35,7 @@ export const deviceParamsSchema = {
   type: "object",
   properties: { deviceId: uuidSchema },
   required: ["deviceId"],
+  additionalProperties: false,
 } as const;
 
 /** JSON Schema for a single device id query. */

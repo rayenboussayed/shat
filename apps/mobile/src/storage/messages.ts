@@ -37,6 +37,7 @@ export interface MessagesDatabase {
   close?(): void | Promise<void>;
 }
 
+/** A message persisted through the (opt-in) mobile messages repository. */
 export interface StoredMessage {
   readonly id: string;
   readonly conversationId: string;

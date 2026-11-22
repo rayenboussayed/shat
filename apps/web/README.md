@@ -9,8 +9,8 @@ npm install
 npm run dev -w apps/web
 ```
 
-The dev server proxies to the backend at `http://localhost:3000` by default; set
-`VITE_API_BASE_URL` to override.
+The typed API client defaults to `http://localhost:3000`; set `VITE_API_BASE_URL`
+to override. There is no Vite dev-server proxy configured.
 
 ## Ghost Mode scope
 

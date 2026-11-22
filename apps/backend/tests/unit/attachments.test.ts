@@ -2,7 +2,7 @@ import type { NestFastifyApplication } from "@nestjs/platform-fastify";
 import { Test } from "@nestjs/testing";
 import { FastifyAdapter } from "@nestjs/platform-fastify";
 import { createHmac, randomBytes, randomUUID } from "node:crypto";
-import { afterEach, describe, expect, it } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 
 import { buildApp } from "../../src/app.js";
 import { AppModule } from "../../src/app.module.js";
@@ -22,6 +22,13 @@ import {
 } from "../../src/attachments/storage.js";
 import { AuthService } from "../../src/identity/auth.service.js";
 import { DatabaseService } from "../../src/db/db.js";
+import { sha256 as trackedSha256 } from "../../src/encoding.js";
+
+// Wrap (do not replace) the shared digest so the single-hash hot path is observable.
+vi.mock("../../src/encoding.js", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("../../src/encoding.js")>();
+  return { ...actual, sha256: vi.fn(actual.sha256) };
+});
 
 const DAY_MS = 24 * 60 * 60 * 1000;
 const ownerDeviceId = randomUUID();
@@ -334,6 +341,24 @@ describe("attachment routes without a database", () => {
     const [row] = state.inserted;
     expect(row).toMatchObject({ id: body.id, ownerDeviceId, sizeBytes: plaintext.length });
     expect(Object.keys(row ?? {})).not.toContain("fileName");
+  });
+
+  it("hashes the ciphertext exactly once on a valid upload", async () => {
+    await setup();
+    const plaintext = randomBytes(64);
+    const payload = uploadBody(plaintext);
+    const sha256Spy = vi.mocked(trackedSha256);
+    sha256Spy.mockClear();
+
+    const response = await app.inject({
+      method: "POST",
+      url: "/attachments",
+      headers: ownerHeaders,
+      payload,
+    });
+
+    expect(response.statusCode).toBe(201);
+    expect(sha256Spy).toHaveBeenCalledTimes(1);
   });
 
   it("removes the blob when the owner quota is exhausted, answering 413", async () => {

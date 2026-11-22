@@ -7,6 +7,7 @@ import { tmpdir } from "node:os";
 import { join } from "node:path";
 import { Pool, type PoolClient } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { insertSession } from "./db-helpers.ts";
 
 const databaseUrl = process.env.DATABASE_URL;
 const ownerToken = randomBytes(32).toString("base64url");
@@ -230,14 +231,4 @@ function upload(app: NestFastifyApplication, token: string, plaintext: Buffer) {
       expiresAt: new Date(Date.now() + DAY_MS).toISOString(),
     },
   });
-}
-
-async function insertSession(client: PoolClient, deviceId: string, token: string): Promise<void> {
-  const tokenHash = createHash("sha256").update(token).digest();
-  await client.query(
-    `INSERT INTO sessions
-       (id, device_id, token_hash, created_at, expires_at, last_used_at, client_info)
-     VALUES ($1, $2, $3, now(), now() + interval '1 day', now(), '{}'::jsonb)`,
-    [randomUUID(), deviceId, tokenHash],
-  );
 }

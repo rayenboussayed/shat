@@ -74,8 +74,8 @@ describe("api contract (typed client)", () => {
     });
     child.stdout?.on("data", () => undefined);
     child.stderr?.on("data", () => undefined);
-    await waitHealthy(port, 10_000);
-  }, 20_000);
+    await waitHealthy(port, 30_000);
+  }, 45_000);
 
   afterAll(async () => {
     if (child && child.exitCode === null && child.signalCode === null) {

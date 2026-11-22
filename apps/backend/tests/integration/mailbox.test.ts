@@ -1,10 +1,11 @@
 import type { NestFastifyApplication } from "@nestjs/platform-fastify";
 import { Test } from "@nestjs/testing";
 import { FastifyAdapter } from "@nestjs/platform-fastify";
-import { createHash, randomBytes, randomUUID } from "node:crypto";
+import { randomBytes, randomUUID } from "node:crypto";
 import { readFile } from "node:fs/promises";
 import { Pool, type PoolClient } from "pg";
 import { afterAll, beforeAll, describe, expect, it } from "vitest";
+import { insertSession } from "./db-helpers.ts";
 
 // buildApp and AppModule are imported dynamically in beforeAll.
 
@@ -14,6 +15,8 @@ const recipientToken = randomBytes(32).toString("base64url");
 const userId = randomUUID();
 const actorDeviceId = randomUUID();
 const recipientDeviceId = randomUUID();
+const quotaDeviceId = randomUUID();
+const quotaToken = randomBytes(32).toString("base64url");
 
 describe("Mailbox routes", () => {
   let app: NestFastifyApplication;
@@ -43,11 +46,12 @@ describe("Mailbox routes", () => {
       );
       await client.query(
         `INSERT INTO devices (id, user_id, created_at, last_seen_at, revoked_at)
-         VALUES ($1, $3, now(), now(), NULL), ($2, $3, now(), now(), NULL)`,
-        [actorDeviceId, recipientDeviceId, userId],
+         VALUES ($1, $4, now(), now(), NULL), ($2, $4, now(), now(), NULL), ($3, $4, now(), now(), NULL)`,
+        [actorDeviceId, recipientDeviceId, quotaDeviceId, userId],
       );
       await insertSession(client, actorDeviceId, actorToken);
       await insertSession(client, recipientDeviceId, recipientToken);
+      await insertSession(client, quotaDeviceId, quotaToken);
 
       const runtimeUrl = new URL(databaseUrl);
       runtimeUrl.searchParams.set("options", `-c search_path=${schemaName},public`);
@@ -235,14 +239,82 @@ describe("Mailbox routes", () => {
     expect(text).toContain("Index Scan");
     expect(text).toContain("mailbox_messages_queued_recipient_enqueued_idx");
   });
-});
 
-async function insertSession(client: PoolClient, deviceId: string, token: string): Promise<void> {
-  const tokenHash = createHash("sha256").update(token).digest();
-  await client.query(
-    `INSERT INTO sessions
-       (id, device_id, token_hash, created_at, expires_at, last_used_at, client_info)
-     VALUES ($1, $2, $3, now(), now() + interval '1 day', now(), '{}'::jsonb)`,
-    [randomUUID(), deviceId, tokenHash],
-  );
-}
+  it.skipIf(!databaseUrl)("returns 413 when the recipient's queued quota is exhausted", async () => {
+    if (!client) return;
+    const { MAILBOX_MAX_QUEUED_MESSAGES } = await import("../../src/mailbox/mailbox.service.ts");
+    await client.query(
+      `INSERT INTO mailbox_messages
+         (id, recipient_device_id, sender_device_id, envelope, enqueued_at, expires_at, status)
+       SELECT gen_random_uuid(), $1, $2, decode('01','hex'), now(), now() + interval '1 hour', 'queued'
+       FROM generate_series(1, $3::integer)`,
+      [quotaDeviceId, actorDeviceId, MAILBOX_MAX_QUEUED_MESSAGES],
+    );
+    try {
+      const response = await app.inject({
+        method: "POST",
+        url: "/mailbox",
+        headers: { authorization: `Bearer ${actorToken}` },
+        payload: {
+          recipientDeviceId: quotaDeviceId,
+          envelope: Buffer.alloc(8, 9).toString("base64"),
+          expiry: new Date(Date.now() + 60_000).toISOString(),
+        },
+      });
+      expect(response.statusCode).toBe(413);
+      expect(response.json()).toMatchObject({ error: "Payload Too Large" });
+    } finally {
+      await client.query(`DELETE FROM mailbox_messages WHERE recipient_device_id = $1`, [quotaDeviceId]);
+    }
+  });
+
+  it.skipIf(!databaseUrl)("does not count expired queued messages against the recipient quota", async () => {
+    if (!client) return;
+    const { MAILBOX_MAX_QUEUED_MESSAGES } = await import("../../src/mailbox/mailbox.service.ts");
+    await client.query(
+      `INSERT INTO mailbox_messages
+         (id, recipient_device_id, sender_device_id, envelope, enqueued_at, expires_at, status)
+       SELECT gen_random_uuid(), $1, $2, decode('01','hex'), now(), now() - interval '1 hour', 'queued'
+       FROM generate_series(1, $3::integer)`,
+      [quotaDeviceId, actorDeviceId, MAILBOX_MAX_QUEUED_MESSAGES],
+    );
+    try {
+      const response = await app.inject({
+        method: "POST",
+        url: "/mailbox",
+        headers: { authorization: `Bearer ${actorToken}` },
+        payload: {
+          recipientDeviceId: quotaDeviceId,
+          envelope: Buffer.alloc(8, 8).toString("base64"),
+          expiry: new Date(Date.now() + 60_000).toISOString(),
+        },
+      });
+      expect(response.statusCode).toBe(201);
+    } finally {
+      await client.query(`DELETE FROM mailbox_messages WHERE recipient_device_id = $1`, [quotaDeviceId]);
+    }
+  });
+
+  it.skipIf(!databaseUrl)("never returns an expired queued message from poll", async () => {
+    if (!client) return;
+    const expiredId = randomUUID();
+    await client.query(
+      `INSERT INTO mailbox_messages
+         (id, recipient_device_id, sender_device_id, envelope, enqueued_at, expires_at, status)
+       VALUES ($1, $2, $3, decode('01','hex'), now(), now() - interval '1 hour', 'queued')`,
+      [expiredId, quotaDeviceId, actorDeviceId],
+    );
+    try {
+      const response = await app.inject({
+        method: "GET",
+        url: "/mailbox?limit=100",
+        headers: { authorization: `Bearer ${quotaToken}` },
+      });
+      expect(response.statusCode).toBe(200);
+      const ids = response.json<{ messages: { id: string }[] }>().messages.map((message) => message.id);
+      expect(ids).not.toContain(expiredId);
+    } finally {
+      await client.query(`DELETE FROM mailbox_messages WHERE id = $1`, [expiredId]);
+    }
+  });
+});
