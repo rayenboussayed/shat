@@ -1,5 +1,6 @@
 # syntax=docker/dockerfile:1
-# SHAT backend. Pinned by digest: node:26.13.1-bookworm-slim.
+ARG NODE_RUNTIME_IMAGE=node:26.13.1-alpine3.24@sha256:6bd9ab43c0ec0190ca7b2d193906cb8b7edf6e7f4afa43ddeccd6452710bffb5
+# SHAT backend. Build/deps on node:26.13.1-bookworm-slim; runtime on node:26.13.1-alpine3.24.
 ARG NODE_IMAGE=node:26.13.1-bookworm-slim@sha256:5df79989ed685e09f0a98019db4cebfb22fb9df1a53c0161664a011f7ff6b0f1
 
 # ---------------------------------------------------------------------------
@@ -58,17 +59,25 @@ EXPOSE 3000
 CMD ["sh", "-c", "npm run build -w apps/backend && (./node_modules/.bin/tsc -p apps/backend/tsconfig.json --watch --preserveWatchOutput & exec node --watch apps/backend/dist/apps/backend/src/main.js)"]
 
 # ---------------------------------------------------------------------------
-# runtime: production dependencies + compiled JS only, explicit non-root UID.
+# runtime: Alpine base, production dependencies + compiled JS only, non-root UID.
+# Alpine keeps the image small and avoids the Debian package CVEs that shipped
+# in the bookworm-slim base. Runtime deps are pure JavaScript, so the musl libc
+# base is safe (no native addons are copied).
 # ---------------------------------------------------------------------------
-FROM ${NODE_IMAGE} AS runtime
+FROM ${NODE_RUNTIME_IMAGE} AS runtime
 WORKDIR /app/apps/backend
 # Ciphertext blobs go to /var/lib/shat/attachments (uid 10001). The directory is
 # created here and must be backed by a named volume in production Compose;
 # /tmp would be discarded on recreate and the default var/attachments under
 # /app/apps/backend is root-owned.
 ENV NODE_ENV=production PORT=3000 ATTACHMENT_STORAGE_DIR=/var/lib/shat/attachments
-RUN groupadd --gid 10001 shat \
- && useradd --uid 10001 --gid shat --shell /usr/sbin/nologin --no-create-home shat \
+# Patch Alpine packages at build time and drop npm from the runtime image: the
+# backend only runs compiled JS, so npm is build-time only. This also removes
+# the npm-bundled node-pkg CVEs from scans.
+RUN apk upgrade --no-cache \
+ && rm -rf /usr/local/lib/node_modules/npm /usr/local/bin/npm /usr/local/bin/npx
+RUN addgroup -g 10001 shat \
+ && adduser -u 10001 -G shat -s /sbin/nologin -D -H shat \
  && mkdir -p /var/lib/shat/attachments \
  && chown -R 10001:10001 /var/lib/shat
 COPY --from=prod-deps --chown=10001:10001 /app/node_modules /app/node_modules

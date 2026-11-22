@@ -50,7 +50,8 @@ carry secrets, must run as non-root, and must be rebuildable from pinned bases.
   by Vite with `VITE_API_BASE_URL` as a build arg and served by pinned
   nginx:alpine as uid 101:101 with a `wget` healthcheck and an HTTP CSP header.
 - Base images are pinned with tag **and** digest
-  (`node:26.13.1-bookworm-slim@sha256:…`, `nginx:alpine@sha256:…`,
+  (`node:26.13.1-bookworm-slim@sha256:…` for build/deps stages,
+  `node:26.13.1-alpine3.24@sha256:…` for the runtime, `nginx:alpine@sha256:…`,
   `postgres:16-alpine@sha256:…`) and every postgres volume is named. The digest
   is the authoritative identifier. Tag-to-digest pairs were verified via the
   Docker Hub tag API on 2026-11-22; a stale postgres digest was corrected.
