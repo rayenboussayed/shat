@@ -1,3 +1,5 @@
+import { base64Schema } from "../encoding.ts";
+
 /** UUID pattern shared by mailbox payloads. */
 const uuidSchema = {
   type: "string",
@@ -5,8 +7,6 @@ const uuidSchema = {
 } as const;
 
 /** Loose base64 string bounds; exact byte lengths are checked in services. */
-const base64Schema = { type: "string", minLength: 4, maxLength: 8192 } as const;
-
 /** JSON Schema for submitting a ciphertext envelope. */
 export const mailboxCreateBodySchema = {
   type: "object",

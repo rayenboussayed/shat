@@ -1,4 +1,5 @@
 import { Injectable } from "@nestjs/common";
+import { decodeCanonicalBase64 } from "../encoding.ts";
 import { randomUUID } from "node:crypto";
 import {
   and,
@@ -35,22 +36,11 @@ const publicError = (statusCode: number) => {
   return { statusCode, ...map[statusCode] };
 };
 
-const MAX_ENVELOPE_BYTES = 8192;
-
 function parseExpiry(value: string | undefined): Date | undefined {
   if (!value) return undefined;
   const date = new Date(value);
   if (Number.isNaN(date.getTime())) return undefined;
   return date;
-}
-
-/** Variable-length base64 envelope validator; AuthService.decodeBase64 requires an exact byte length, which does not fit envelopes up to 8192 bytes. */
-function validateBase64(value: string): Buffer | undefined {
-  if (!/^[A-Za-z0-9+/]+={0,2}$/.test(value)) return undefined;
-  const decoded = Buffer.from(value, "base64");
-  if (decoded.length === 0 || decoded.length > MAX_ENVELOPE_BYTES) return undefined;
-  if (decoded.toString("base64").replace(/=+$/, "") !== value.replace(/=+$/, "")) return undefined;
-  return decoded;
 }
 
 /** Mailbox submission, polling and acknowledgement. */
@@ -76,7 +66,7 @@ export class MailboxService {
       return { status: 404, body: publicError(404) };
     }
 
-    const envelopeBuffer = validateBase64(body.envelope);
+    const envelopeBuffer = decodeCanonicalBase64(body.envelope, 8192);
     if (!envelopeBuffer) {
       return {
         status: 400,

@@ -1,3 +1,5 @@
+import { base64Schema } from "../encoding.ts";
+
 /** UUID pattern shared by identity and prekey payloads. */
 const uuidSchema = {
   type: "string",
@@ -5,8 +7,6 @@ const uuidSchema = {
 } as const;
 
 /** Loose base64 string bounds; exact byte lengths are checked in services. */
-const base64Schema = { type: "string", minLength: 4, maxLength: 8192 } as const;
-
 /** Session lifetime used when enrolling a device. */
 export const sessionDurationMs = 30 * 24 * 60 * 60 * 1000;
 
