@@ -20,6 +20,7 @@ const bytea = customType<{ data: Uint8Array; driverData: Uint8Array }>({
   dataType: () => "bytea",
 });
 
+/** Accounts, their lifecycle status and soft-delete timestamp. */
 export const users = pgTable(
   "users",
   {
@@ -31,6 +32,7 @@ export const users = pgTable(
   (table) => [check("users_status_check", sql`${table.status} IN ('active', 'disabled', 'deleted')`)],
 );
 
+/** Devices enrolled under an account, with last-seen and revocation state. */
 export const devices = pgTable(
   "devices",
   {
@@ -45,6 +47,7 @@ export const devices = pgTable(
   (table) => [index("devices_user_revoked_idx").on(table.userId, table.revokedAt)],
 );
 
+/** Identity public key published by each device, with algorithm and rotation time. */
 export const deviceIdentityKeys = pgTable("device_identity_keys", {
   deviceId: uuid("device_id")
     .primaryKey()
@@ -55,6 +58,7 @@ export const deviceIdentityKeys = pgTable("device_identity_keys", {
   rotatedAt: timestamp("rotated_at", { withTimezone: true }),
 });
 
+/** Signed prekey published by a device for peers starting a session. */
 export const signedPrekeys = pgTable(
   "signed_prekeys",
   {
@@ -78,6 +82,7 @@ export const signedPrekeys = pgTable(
   ],
 );
 
+/** Single-use prekeys claimed by peers, tracked by key id and claim receipt. */
 export const oneTimePrekeys = pgTable(
   "one_time_prekeys",
   {
@@ -99,6 +104,7 @@ export const oneTimePrekeys = pgTable(
   ],
 );
 
+/** Conversation threads, either direct or group, with soft-delete support. */
 export const conversations = pgTable(
   "conversations",
   {
@@ -110,6 +116,7 @@ export const conversations = pgTable(
   (table) => [check("conversations_kind_check", sql`${table.kind} IN ('direct', 'group')`)],
 );
 
+/** Device membership and role in each conversation, including leave time. */
 export const conversationMembers = pgTable(
   "conversation_members",
   {
@@ -129,6 +136,7 @@ export const conversationMembers = pgTable(
   ],
 );
 
+/** Offline envelopes queued per recipient device until delivery, ack or expiry. */
 export const mailboxMessages = pgTable(
   "mailbox_messages",
   {
@@ -159,6 +167,7 @@ export const mailboxMessages = pgTable(
   ],
 );
 
+/** Delivery, read and failure receipts tied to queued mailbox messages. */
 export const deliveryReceipts = pgTable(
   "delivery_receipts",
   {
@@ -181,6 +190,7 @@ export const deliveryReceipts = pgTable(
   ],
 );
 
+/** Blob metadata for device-owned uploads, including digest and expiry. */
 export const attachments = pgTable(
   "attachments",
   {
@@ -199,6 +209,7 @@ export const attachments = pgTable(
   (table) => [index("attachments_owner_deleted_idx").on(table.ownerDeviceId, table.deletedAt)],
 );
 
+/** Hashed session tokens with issue, expiry, last-use and revocation state. */
 export const sessions = pgTable(
   "sessions",
   {
@@ -219,6 +230,7 @@ export const sessions = pgTable(
   ],
 );
 
+/** Push endpoints registered per device, with encrypted target and lookup hash. */
 export const pushEndpoints = pgTable(
   "push_endpoints",
   {
@@ -239,6 +251,7 @@ export const pushEndpoints = pgTable(
   ],
 );
 
+/** Pseudonymized audit trail of security-relevant events and their outcomes. */
 export const auditEvents = pgTable(
   "audit_events",
   {
@@ -260,6 +273,7 @@ export const auditEvents = pgTable(
   ],
 );
 
+/** Time-bucketed service metric samples keyed by metric name and dimensions. */
 export const serviceMetrics = pgTable(
   "service_metrics",
   {

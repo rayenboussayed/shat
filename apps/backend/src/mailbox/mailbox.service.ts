@@ -31,6 +31,7 @@ const MAX_MAILBOX_RETENTION_MS = 30 * 24 * 60 * 60 * 1000;
 
 /** Bounds on live queued envelopes held for one recipient device. */
 export const MAILBOX_MAX_QUEUED_MESSAGES = 1000;
+/** Maximum total size in bytes of live queued envelopes for one recipient device. */
 export const MAILBOX_MAX_QUEUED_BYTES = 64 * 1024 * 1024;
 
 /** True when a recipient's live queued usage leaves no room for another envelope. */
