@@ -7,6 +7,12 @@ import type { paths } from "shat-api-types";
 
 const serverEntry = new URL("../../dist/apps/backend/src/main.js", import.meta.url);
 
+/** Origin included in the spawned server's CORS allow-list via CORS_ORIGINS. */
+const ALLOWED_ORIGIN = "https://release-allowed.example.test";
+
+/** Origin intentionally excluded from the spawned server's CORS allow-list. */
+const DISALLOWED_ORIGIN = "https://release-denied.example.test";
+
 function freePort(): Promise<number> {
   return new Promise((resolve, reject) => {
     const server = net.createServer();
@@ -66,7 +72,11 @@ describe("api contract (typed client)", () => {
 
   beforeAll(async () => {
     port = await freePort();
-    const env: NodeJS.ProcessEnv = { ...process.env, PORT: String(port) };
+    const env: NodeJS.ProcessEnv = {
+      ...process.env,
+      PORT: String(port),
+      CORS_ORIGINS: ALLOWED_ORIGIN,
+    };
     delete env.DATABASE_URL;
     child = spawn(process.execPath, [serverEntry.pathname], {
       env,
@@ -124,5 +134,61 @@ describe("api contract (typed client)", () => {
     }
     expect(parsed.statusCode).toBe(400);
     expect(parsed.error).toBe("Bad Request");
+  });
+
+  it("answers CORS preflight for an allowed origin", async () => {
+    const response = await fetch(`http://127.0.0.1:${port}/health`, {
+      method: "OPTIONS",
+      headers: {
+        Origin: ALLOWED_ORIGIN,
+        "Access-Control-Request-Method": "GET",
+      },
+    });
+    expect(response.status).toBe(204);
+    expect(response.headers.get("access-control-allow-origin")).toBe(ALLOWED_ORIGIN);
+    expect(response.headers.get("access-control-allow-methods")).toBe(
+      "GET, POST, PUT, PATCH, DELETE, OPTIONS",
+    );
+    expect(response.headers.get("access-control-max-age")).toBe("600");
+  });
+
+  it("omits the allow-origin header for a disallowed origin", async () => {
+    const response = await fetch(`http://127.0.0.1:${port}/health`, {
+      method: "OPTIONS",
+      headers: {
+        Origin: DISALLOWED_ORIGIN,
+        "Access-Control-Request-Method": "GET",
+      },
+    });
+    expect(response.headers.get("access-control-allow-origin")).toBeNull();
+  });
+
+  it("emits decreasing rate-limit headers on repeated requests", async () => {
+    const url = `http://127.0.0.1:${port}/identity/devices`;
+    const first = await fetch(url, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({}),
+    });
+    const second = await fetch(url, {
+      method: "POST",
+      headers: { "content-type": "application/json" },
+      body: JSON.stringify({}),
+    });
+
+    expect(first.headers.get("x-ratelimit-limit")).toBe("100");
+    expect(second.headers.get("x-ratelimit-limit")).toBe("100");
+
+    const firstRemainingHeader = first.headers.get("x-ratelimit-remaining");
+    const secondRemainingHeader = second.headers.get("x-ratelimit-remaining");
+    expect(firstRemainingHeader).not.toBeNull();
+    expect(secondRemainingHeader).not.toBeNull();
+    const firstRemaining = Number(firstRemainingHeader);
+    const secondRemaining = Number(secondRemainingHeader);
+    expect(Number.isInteger(firstRemaining)).toBe(true);
+    expect(Number.isInteger(secondRemaining)).toBe(true);
+    expect(firstRemaining - secondRemaining).toBe(1);
+
+    expect(first.headers.get("x-ratelimit-reset")).toMatch(/^\d+$/);
   });
 }, 30_000);
