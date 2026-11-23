@@ -24,6 +24,14 @@ const styles = stylex.create({
     marginTop: tokens.spacingSmall,
     color: tokens.colorAccent,
   },
+  link: {
+    ":focus-visible": {
+      outlineWidth: tokens.focusRingWidth,
+      outlineStyle: "solid",
+      outlineColor: tokens.colorFocus,
+      outlineOffset: tokens.focusRingOffset,
+    },
+  },
 });
 
 type HealthState = "loading" | "ok" | "error";
@@ -86,7 +94,11 @@ export function IndexComponent() {
     createElement(
       "p",
       null,
-      createElement(Link, { to: "/conversations" }, "Conversations"),
+      createElement(
+        Link,
+        { to: "/conversations", ...stylex.props(styles.link) },
+        "Conversations",
+      ),
     ),
   );
 }

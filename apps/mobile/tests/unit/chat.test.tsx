@@ -85,6 +85,21 @@ describe("ChatScreen", () => {
     root.unmount();
   });
 
+  it("shows an empty state when there are no conversations", async () => {
+    vi.mocked(api.GET).mockResolvedValue({
+      data: { conversations: [] },
+      error: undefined,
+      response: new Response(),
+    } satisfies Awaited<ReturnType<typeof api.GET>>);
+    const { container, root } = render(createElement(ChatScreen));
+    await act(async () => {
+      root.render(createElement(ChatScreen));
+    });
+    await flush();
+    expect(container.textContent).toContain("No conversations");
+    root.unmount();
+  });
+
   it("calls the typed client on send", async () => {
     const { container, root } = render(createElement(ChatScreen));
     await act(async () => {

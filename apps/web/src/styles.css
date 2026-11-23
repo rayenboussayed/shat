@@ -10,3 +10,11 @@ body,
 body {
   font-family: system-ui, sans-serif;
 }
+
+/* Keyboard focus must never be invisible. Values mirror the focus-ring design
+ * tokens in styles/tokens.stylex.ts; components may override with their own
+ * tokenised :focus-visible rule. */
+:focus-visible {
+  outline: 2px solid #1d4ed8;
+  outline-offset: 2px;
+}

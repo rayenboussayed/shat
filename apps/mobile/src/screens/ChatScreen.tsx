@@ -145,10 +145,31 @@ export function ChatScreen(): ReactElement {
         Conversations
       </Text>
       {state === "loading" ? (
-        <Text accessibilityLabel="Loading conversations">Loading…</Text>
+        <Text
+          accessible
+          accessibilityLiveRegion="polite"
+          accessibilityLabel="Loading conversations"
+        >
+          Loading…
+        </Text>
       ) : null}
       {state === "error" ? (
-        <Text accessibilityLabel="Conversations error">Could not load.</Text>
+        <Text
+          accessible
+          accessibilityLiveRegion="polite"
+          accessibilityLabel="Conversations error"
+        >
+          Could not load.
+        </Text>
+      ) : null}
+      {state === "ready" && conversations.length === 0 ? (
+        <Text
+          accessible
+          accessibilityLiveRegion="polite"
+          accessibilityLabel="No conversations"
+        >
+          No conversations yet.
+        </Text>
       ) : null}
       {conversations.map((id) => (
         <Button

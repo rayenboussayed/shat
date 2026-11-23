@@ -28,6 +28,12 @@ const styles = stylex.create({
     borderColor: tokens.colorBorder,
     borderRadius: tokens.radiusMedium,
     fontFamily: "inherit",
+    ":focus-visible": {
+      outlineWidth: tokens.focusRingWidth,
+      outlineStyle: "solid",
+      outlineColor: tokens.colorFocus,
+      outlineOffset: tokens.focusRingOffset,
+    },
   },
   button: {
     alignSelf: "flex-start",

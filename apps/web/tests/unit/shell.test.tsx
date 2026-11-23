@@ -41,6 +41,21 @@ describe("web shell", () => {
     root.unmount();
   });
 
+  it("renders a skip link to the routed content", async () => {
+    const container = document.createElement("div");
+    document.body.appendChild(container);
+    const root = createRoot(container);
+    const router = createTestRouter();
+    await act(async () => {
+      root.render(createElement(RouterProvider, { router }));
+    });
+    expect(
+      container.querySelector('a[href="#main-content"]')?.textContent,
+    ).toContain("Skip to content");
+    expect(container.querySelector("#main-content")).not.toBeNull();
+    root.unmount();
+  });
+
   it("requests health through the typed client", async () => {
     const container = document.createElement("div");
     document.body.appendChild(container);
