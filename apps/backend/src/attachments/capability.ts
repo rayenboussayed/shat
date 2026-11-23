@@ -1,5 +1,6 @@
-import { createHmac, randomBytes, timingSafeEqual } from "node:crypto";
+import { createHmac, randomBytes } from "node:crypto";
 
+import { digestsEqual } from "../encoding.ts";
 import { UUID_PATTERN } from "../uuid.ts";
 import { decodeCanonicalBase64 } from "./encoding.ts";
 
@@ -61,7 +62,7 @@ export function verifyDownloadToken(
   }
   const expected = Buffer.from(sign(key, `${attachmentId}.${expiry}`));
   const actual = Buffer.from(signature);
-  if (expected.length !== actual.length || !timingSafeEqual(expected, actual)) {
+  if (!digestsEqual(expected, actual)) {
     return undefined;
   }
   return attachmentId;

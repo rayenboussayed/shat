@@ -1,9 +1,10 @@
 import { base64Schema } from "../encoding.ts";
+import { UUID_PATTERN_STRING } from "../uuid.ts";
 
 /** UUID pattern shared by identity and prekey payloads. */
 const uuidSchema = {
   type: "string",
-  pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+  pattern: UUID_PATTERN_STRING,
 } as const;
 
 /** Session lifetime used when enrolling a device. */

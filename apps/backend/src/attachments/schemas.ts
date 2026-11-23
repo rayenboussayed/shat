@@ -1,3 +1,5 @@
+import { UUID_PATTERN_STRING } from "../uuid.ts";
+
 /** Hard bounds for attachment uploads, shared by schemas and services. */
 export const ATTACHMENT_LIMITS = {
   /** Largest accepted ciphertext blob, in bytes. Fits the 1 MiB Fastify body limit once base64 encoded. */
@@ -16,7 +18,7 @@ const MAX_CIPHERTEXT_BASE64_LENGTH = Math.ceil(ATTACHMENT_LIMITS.maxCiphertextBy
 /** UUID pattern shared by attachment identifiers. */
 const uuidSchema = {
   type: "string",
-  pattern: "^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$",
+  pattern: UUID_PATTERN_STRING,
 } as const;
 
 /** JSON Schema for uploading a ciphertext blob. Exact bounds are re-checked in the service. */

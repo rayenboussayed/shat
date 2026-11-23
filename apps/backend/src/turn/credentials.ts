@@ -3,6 +3,11 @@ import { createHmac } from "node:crypto";
 /** Lifetime of an issued TURN credential in seconds. Policy maximum is five minutes. */
 export const TURN_CREDENTIAL_TTL_SECONDS = 300;
 
+/**
+ * TURN username shape `<expiry>:<deviceId>`. Kept local: its outer anchors and
+ * capture group are specific to this format, so it cannot derive from the
+ * anchored shared UUID pattern.
+ */
 const USERNAME_PATTERN =
   /^(\d{1,11}):([0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12})$/;
 

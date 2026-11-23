@@ -1,3 +1,5 @@
+import { UUID_PATTERN } from "../uuid.ts";
+
 /** Signaling wire protocol version accepted by the server. */
 const SIGNALING_PROTOCOL_VERSION = 1;
 
@@ -18,8 +20,6 @@ export const MAX_EVENT_LIFETIME_MS = 60 * 1000;
 
 /** Largest accepted clock lead of sentAt over the server clock. */
 const MAX_CLOCK_SKEW_MS = 5 * 1000;
-
-const UUID_PATTERN = /^[0-9a-f]{8}-[0-9a-f]{4}-[1-8][0-9a-f]{3}-[89ab][0-9a-f]{3}-[0-9a-f]{12}$/;
 
 /** Every event type the signaling protocol knows about. */
 const SIGNALING_EVENT_TYPES = [

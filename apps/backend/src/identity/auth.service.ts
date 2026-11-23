@@ -1,12 +1,12 @@
 import { Injectable } from "@nestjs/common";
-import { randomBytes, timingSafeEqual } from "node:crypto";
+import { randomBytes } from "node:crypto";
 import { and, eq, gt, isNull } from "drizzle-orm";
 import { DatabaseService } from "../db/db.ts";
 import {
   devices,
   sessions,
 } from "../db/db.ts";
-import { decodeCanonicalBase64, sha256 } from "../encoding.ts";
+import { decodeCanonicalBase64, digestsEqual, sha256 } from "../encoding.ts";
 import type { SessionHeaders, Actor } from "./schemas.ts";
 
 /** Handles session token extraction, hashing and constant-time comparison. */
@@ -75,28 +75,25 @@ export class AuthService {
     }
 
     const storedHash = Buffer.from(session.tokenHash);
-    if (storedHash.length !== tokenHash.length || !timingSafeEqual(storedHash, tokenHash)) {
+    if (!digestsEqual(storedHash, tokenHash)) {
       return undefined;
     }
 
     return { id: session.id, userId: session.userId, sessionId: session.sessionId, tokenHash };
   }
 
-  /** Compares an enrollment secret in constant time. */
+  /** Compares an enrollment secret in constant time via its SHA-256 digest. */
   matchesSecret(candidate: string, expected: string): boolean {
     const candidateHash = this.hashToken(candidate);
     const expectedHash = this.hashToken(expected);
-    return timingSafeEqual(candidateHash, expectedHash);
+    return digestsEqual(candidateHash, expectedHash);
   }
 
-  /** Compares two UTF-8 strings in constant time with length checks. */
+  /** Compares two UTF-8 strings in constant time, including a length check. */
   matchesUtf8(candidate: string, expected: string): boolean {
     const candidateBytes = Buffer.from(candidate, "utf8");
     const expectedBytes = Buffer.from(expected, "utf8");
-    return (
-      candidateBytes.length === expectedBytes.length &&
-      timingSafeEqual(candidateBytes, expectedBytes)
-    );
+    return digestsEqual(candidateBytes, expectedBytes);
   }
 
   /** Decodes canonical base64 with an exact byte length. */
