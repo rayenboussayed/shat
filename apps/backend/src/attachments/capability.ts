@@ -2,7 +2,7 @@ import { createHmac, randomBytes } from "node:crypto";
 
 import { digestsEqual } from "../encoding.ts";
 import { UUID_PATTERN } from "../uuid.ts";
-import { decodeCanonicalBase64 } from "./encoding.ts";
+import { decodeCanonicalBase64 } from "../encoding.ts";
 
 /** Minimum accepted length of a configured capability signing key, in bytes. */
 const MIN_KEY_BYTES = 32;

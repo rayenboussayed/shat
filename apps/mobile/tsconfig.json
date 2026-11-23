@@ -9,6 +9,6 @@
     "moduleResolution": "Bundler",
     "types": ["react", "node"]
   },
-  "include": ["src", "tests", "index.ts", "app.config.ts"],
+  "include": ["src", "tests", "index.ts"],
   "exclude": []
 }

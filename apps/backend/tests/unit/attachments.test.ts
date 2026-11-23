@@ -7,7 +7,7 @@ import { afterEach, describe, expect, it, vi } from "vitest";
 import { buildApp } from "../../src/app.js";
 import { AppModule } from "../../src/app.module.js";
 import { AttachmentsService } from "../../src/attachments/attachments.service.js";
-import { decodeCanonicalBase64, sha256 } from "../../src/attachments/encoding.js";
+import { decodeCanonicalBase64, sha256 } from "../../src/encoding.js";
 import {
   ATTACHMENT_CAPABILITY_KEY,
   issueDownloadToken,
@@ -152,6 +152,11 @@ describe("attachment encoding", () => {
     expect(decodeCanonicalBase64("a b=")).toBeUndefined();
     expect(decodeCanonicalBase64("aGk=")).toBeDefined();
     expect(decodeCanonicalBase64("aGl=")).toBeUndefined();
+    expect(decodeCanonicalBase64("A")).toBeUndefined();
+  });
+
+  it("rejects a decoded value that exceeds the byte limit", () => {
+    expect(decodeCanonicalBase64("aGVsbG8=", 3)).toBeUndefined();
   });
 });
 
@@ -195,6 +200,12 @@ describe("download capabilities", () => {
     expect(loadCapabilityKey({})).toHaveLength(32);
     expect(() => loadCapabilityKey({ ATTACHMENT_CAPABILITY_KEY: Buffer.alloc(16).toString("base64") })).toThrow(
       "at least 32 bytes",
+    );
+    expect(() => loadCapabilityKey({ ATTACHMENT_CAPABILITY_KEY: "not-valid-base64!" })).toThrow(
+      "at least 32 bytes",
+    );
+    expect(loadCapabilityKey({ ATTACHMENT_CAPABILITY_KEY: Buffer.alloc(32, 7).toString("base64") })).toHaveLength(
+      32,
     );
   });
 });

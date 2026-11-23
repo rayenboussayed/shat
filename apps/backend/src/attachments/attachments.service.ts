@@ -13,7 +13,7 @@ import { and, eq, gt, inArray, isNotNull, isNull, lte, or, sql } from "drizzle-o
 import { DatabaseService, attachments } from "../db/db.ts";
 import { AuthService } from "../identity/auth.service.ts";
 import type { Actor } from "../identity/schemas.ts";
-import { digestsEqual, decodeCanonicalBase64, sha256 } from "./encoding.ts";
+import { digestsEqual, decodeCanonicalBase64, sha256 } from "../encoding.ts";
 import {
   ATTACHMENT_CAPABILITY_KEY,
   issueDownloadToken,
