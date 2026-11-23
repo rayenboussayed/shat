@@ -4,6 +4,32 @@ All notable changes to SHAT (spec v1.0-draft, §14) are recorded here, one
 entry per subtask. Date format: `YYYY-MM-DD`. Build-phase subtasks use the
 `P<n>` ids used in the Build phase section below.
 
+## Release v1.0.0 (2026-11-23)
+
+This is a GitHub-only release. It is published by a signed v1.0.0 git tag,
+which triggers the release workflow. No GitHub Release object is created.
+
+- Container images: the release workflow publishes three images to GHCR under
+  immutable `sha-<commit>` tags (`SHAT_IMAGE_TAG=sha-<commit>`): `shat-backend`,
+  `shat-web` and `shat-dashboard`. No `latest` tag is published.
+- Android: a release APK for `com.shat.app` is built locally with an upload key
+  held outside the repo. The APK is gitignored and is not committed. No AAB is
+  produced and there is no Play Store submission.
+- End-to-end tests: cross-platform e2e coverage is part of this release.
+  Playwright Chromium suites drive the web SPA and the dashboard SPA from the
+  root Playwright config. The backend API contract is covered by the Vitest e2e
+  project. Maestro flows with an EAS workflow cover the Android app. The backend
+  suite ran locally. The browser specs are authored and listed but could not
+  launch here because Chromium lacks libnspr4.so and the container cannot
+  install system packages. The Maestro flows are authored but not executed
+  here, since running them needs Expo authentication and an emulator.
+- iOS was not built. The iOS target is configured in app.json, but no iOS binary
+  was produced. An iOS build needs macOS and Xcode, which are not available in
+  this environment.
+- Distribution limits: there is no Google Play submission, no Apple App Store
+  submission and no GitHub Release object. Publication is the pushed signed tag
+  and the GHCR images produced by the release workflow.
+
 ## S1 — scaffold — 2026-11-21
 
 - Repo skeleton per spec §14: `apps/`, `packages/`, `infrastructure/`,
