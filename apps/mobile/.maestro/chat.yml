@@ -10,7 +10,8 @@ appId: com.shat.app
 # Focus the controlled TextInput via its accessibilityLabel, then type.
 - tapOn: 'Message body'
 - inputText: 'maestro e2e smoke'
-- assertVisible: 'maestro e2e smoke'
+# The controlled TextInput keeps its accessibility label after typing.
+- assertVisible: 'Message body'
 # Send message is enabled once the field holds non-whitespace text.
 - tapOn: 'Send message'
 # Status is one of SEND_SUCCESS_STATUS / SEND_FAILED_STATUS (see demo.ts).

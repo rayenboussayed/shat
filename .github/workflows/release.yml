@@ -178,5 +178,5 @@ jobs:
       - name: Record deploy and rollback commands
         run: |
           echo "Release $RELEASE_REF (sha-$RELEASE_SHA) approved for production." >> "$GITHUB_STEP_SUMMARY"
-          echo "Deploy: SHAT_IMAGE_TAG=sha-$RELEASE_SHA docker compose -f infrastructure/docker/compose.production.yaml up -d" >> "$GITHUB_STEP_SUMMARY"
+          echo "Deploy: SHAT_REGISTRY=$SHAT_REGISTRY SHAT_IMAGE_TAG=sha-$RELEASE_SHA docker compose -f infrastructure/docker/compose.production.yaml up -d" >> "$GITHUB_STEP_SUMMARY"
           echo "Rollback: redeploy the previous immutable tag; there is no automatic database rollback (see docs/operations.md)." >> "$GITHUB_STEP_SUMMARY"

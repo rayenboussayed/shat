@@ -5,6 +5,7 @@ test.beforeEach(async ({ page }) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
+      headers: { "Access-Control-Allow-Origin": "*" },
       body: JSON.stringify({ status: "ok" }),
     });
   });
@@ -12,6 +13,7 @@ test.beforeEach(async ({ page }) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
+      headers: { "Access-Control-Allow-Origin": "*" },
       body: JSON.stringify({ conversations: [] }),
     });
   });
@@ -19,6 +21,7 @@ test.beforeEach(async ({ page }) => {
     await route.fulfill({
       status: 200,
       contentType: "application/json",
+      headers: { "Access-Control-Allow-Origin": "*" },
       body: JSON.stringify({ messages: [] }),
     });
   });

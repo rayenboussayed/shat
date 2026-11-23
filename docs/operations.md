@@ -137,9 +137,10 @@ a self-signed key the operator generates and keeps outside the repository.
 3. Re-run `make health` and the smoke checks (backend `/health`, web and
    dashboard roots) and confirm the tag actually deployed.
 4. Optionally re-run the e2e suites after a rollback: `npm run build` first,
-   then `npm run test-e2e` and `npm run test-e2e:browser`. These suites spawn
-   their own backend from `dist/apps/backend/src/main.js` and stub HTTP
-   responses; they do not contact the redeployed Compose stack. Use
+   then `npm run test-e2e` and `npm run test-e2e:browser`. Both suites spawn
+   their own backend from `dist/apps/backend/src/main.js`; the browser specs
+   stub HTTP responses and neither suite contacts the redeployed Compose
+   stack. Use
    `make health` and the smoke checks in step 3 to verify that stack. Chromium
    cannot launch in this container (missing `libnspr4.so`, apt lists not
    writable), so the browser specs are authored but not executed locally here.

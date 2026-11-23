@@ -72,9 +72,9 @@ reverse proxy terminates TLS and maps real public ports.
 ### Test suites
 
 ```bash
-npm run test-unit                       # 181 passed, 29 skipped (210 total)
+npm run test-unit                       # 182 passed, 9 skipped (191 total)
 npm run test-integration                # 17 skipped without DATABASE_URL
-npm run test-e2e                        # 3 passed (typed API contract)
+npm run test-e2e                        # 6 passed (typed API contract)
 npm run test-e2e:browser                # Playwright web + dashboard specs in Chromium
 npm run test-cov -- --coverage.reporter=text --coverage.reporter=json-summary
 npm run test-perf                       # vitest bench (5% regression gate vs committed baselines)
@@ -118,8 +118,8 @@ The true baseline (commit `f00088a`, before code changes) was **30.87%
 statements / 13.58% branches / 40.78% functions / 31.31% lines**, with baseline
 gates failing on missing database scripts and a TS5096 build error (repaired in
 P0). Coverage rose to 54.73% statements (P4) and 82.2% with a real database
-(P6). A final-tree run without `DATABASE_URL` is **77.63% statements
-(1156/1489), 63.87% branches, 83.12% functions, 77.74% lines**; with a real
+(P6). A final-tree run without `DATABASE_URL` is **77.83% statements
+(1159/1489), 63.96% branches, 83.12% functions, 77.95% lines**; with a real
 PostgreSQL the integration suites pass (20/20) and statement coverage rises to
 about 82%. The gap is largely `DATABASE_URL`-gated identity/prekey code. There
 are no configured coverage thresholds, so these numbers are reported, not
