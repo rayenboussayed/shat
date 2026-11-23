@@ -1,0 +1,44 @@
+# SHAT mobile E2E tests on Expo Workflows, using Maestro.
+# AUTHORED ONLY - this workflow has NOT been executed locally.
+# Running it requires Expo auth (EXPO_TOKEN or `eas login`) and an Android
+# Emulator / iOS Simulator. The iOS simulator build + Maestro run also need macOS.
+#
+# Run manually: eas workflow:run .eas/workflows/e2e-tests.yml
+# To run on pull requests, uncomment the block below (the GitHub repo must be
+# linked to the Expo project in the Expo dashboard first):
+# on:
+#   pull_request:
+#     branches: ['*']
+
+name: E2E Tests
+
+jobs:
+  build_android:
+    name: Build Android for E2E
+    type: build
+    params:
+      platform: android
+      profile: e2e-test
+
+  build_ios:
+    name: Build iOS for E2E
+    type: build
+    params:
+      platform: ios
+      profile: e2e-test
+
+  test_android:
+    name: Run Maestro tests (Android)
+    needs: [build_android]
+    type: maestro
+    params:
+      build_id: ${{ needs.build_android.outputs.build_id }}
+      flow_path: ['.maestro/home.yml', '.maestro/chat.yml']
+
+  test_ios:
+    name: Run Maestro tests (iOS)
+    needs: [build_ios]
+    type: maestro
+    params:
+      build_id: ${{ needs.build_ios.outputs.build_id }}
+      flow_path: ['.maestro/home.yml', '.maestro/chat.yml']

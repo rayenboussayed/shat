@@ -1,0 +1,17 @@
+# SHAT mobile chat flow: type into Message body, tap Send, assert the status.
+# Authored from existing accessibility labels; NOT executed locally.
+# Tolerates a missing backend: either send-status string is accepted.
+appId: com.shat.app
+---
+- launchApp
+# Screen context (the ChatScreen is also rendered by the root App component).
+- assertVisible: 'SHAT'
+- assertVisible: 'demo / not E2EE'
+# Focus the controlled TextInput via its accessibilityLabel, then type.
+- tapOn: 'Message body'
+- inputText: 'maestro e2e smoke'
+- assertVisible: 'maestro e2e smoke'
+# Send message is enabled once the field holds non-whitespace text.
+- tapOn: 'Send message'
+# Status is one of SEND_SUCCESS_STATUS / SEND_FAILED_STATUS (see demo.ts).
+- assertVisible: 'Sent.*|Send failed.*'

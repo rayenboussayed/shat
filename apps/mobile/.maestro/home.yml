@@ -1,0 +1,14 @@
+# SHAT mobile "home" smoke flow.
+# Authored from existing accessibility labels / visible text; NOT executed locally.
+# appId matches android.package and ios.bundleIdentifier in apps/mobile/app.json.
+appId: com.shat.app
+---
+- launchApp
+# Boot: title and the ChatScreen header are always rendered.
+- assertVisible: 'SHAT'
+- assertVisible: 'Conversations'
+# Health text: "loading" -> "ok" (backend up) or "error" (backend absent).
+# All three states are accepted so the flow tolerates a missing backend.
+- assertVisible: 'Health: (ok|error|loading)'
+# Disclosure label rendered from DEMO_ENVELOPE_LABEL ("demo / not E2EE").
+- assertVisible: 'demo / not E2EE'

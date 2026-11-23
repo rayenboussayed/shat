@@ -12,3 +12,19 @@ apps/mobile/ios/
 apps/mobile/.expo/
 test-results/
 playwright-report/
+
+# Signing credentials and native artifacts (never commit)
+credentials.json
+*.jks
+*.keystore
+*.p12
+*.mobileprovision
+*.p8
+
+# Local native build outputs
+*.apk
+*.aab
+*.ipa
+
+# Maestro / mobile e2e artifacts
+maestro-results/
