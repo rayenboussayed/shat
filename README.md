@@ -76,7 +76,7 @@ npm run test-unit                       # 181 passed, 29 skipped (210 total)
 npm run test-integration                # 17 skipped without DATABASE_URL
 npm run test-e2e                        # 3 passed (typed API contract)
 npm run test-cov -- --coverage.reporter=text --coverage.reporter=json-summary
-npm run test-perf                       # vitest bench (no baseline files yet)
+npm run test-perf                       # vitest bench (5% regression gate vs committed baselines)
 npm run test-mem                        # GC-exposed memory suite
 npm run build                           # all workspaces
 ```
@@ -96,8 +96,11 @@ PostgreSQL the integration suites pass (20/20) and statement coverage rises to
 about 82%. The gap is largely `DATABASE_URL`-gated identity/prekey code. There
 are no configured coverage thresholds, so these numbers are reported, not
 enforced as gates; 95% global / 98% domain / 100% crypto remain recommended
-targets. Benchmark and memory suites exist but have no numeric baseline to
-compare against.
+targets. Eight committed benchmark baselines under
+`apps/backend/test/perf/baselines/` gate throughput at 5% against the fixed
+runner that produced them; the memory suite keeps absolute caps with a tighter
+relative bound. Regenerate the baselines on the same runner when the toolchain
+changes.
 
 ## Architecture and decisions
 
