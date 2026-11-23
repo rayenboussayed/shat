@@ -1,9 +1,10 @@
 #!/usr/bin/env bash
 set -euo pipefail
 
-# SHAT — health check per spec §15.4: backend /health on 127.0.0.1:3000.
+# SHAT — health check per spec §15.4: backend /health on 127.0.0.1:$PORT.
+# PORT defaults to 3000 when unset or empty; published Docker ports can set it.
 host=127.0.0.1
-port=3000
+port="${PORT:-3000}"
 path=/health
 
 for _ in $(seq 1 30); do

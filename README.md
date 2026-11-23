@@ -13,19 +13,16 @@ verified here (see "Unverified" below).
 ## Status
 
 Build phase P0–P13 complete; P14 adds hardened CI and final documentation.
-See `CHANGELOG.md` for one entry per subtask and `.agent-swarm/STATE.md` for the
-coordinator log. All quality gates (`npm run check`, `npm run test-cov`,
-`npm run build`, Compose config validation) exit 0 locally. `npm audit --omit=dev`
-is red with three moderate upstream `expo` advisories, accepted by the user with
-no override added. `npm audit fix` (no overrides, no audit-level change) made no
-lockfile changes: the project already pins undici 8.13.1 and brace-expansion
-5.0.13. A fresh Trivy 0.76.2 scan of the backend image still reports HIGH
-findings for undici/brace-expansion and unfixed Debian base packages; the npm
-ones come from the npm CLI bundled inside the pinned Node base image
-(`/usr/local/lib/node_modules/npm/node_modules/`), **not** from app
-dependencies. No override or floating base tag was added to hide them; clearing
-them needs a runtime base with a patched npm or a distroless runtime. The
-rebuilt web and dashboard images scan clean at HIGH/CRITICAL after `apk upgrade`.
+See `CHANGELOG.md` for one entry per subtask. All quality gates (`npm run check`,
+`npm run test-cov`, `npm run build`, Compose config validation) exit 0 locally.
+`npm audit --omit=dev` is red with three moderate upstream `expo` advisories,
+accepted by the user with no override added. `npm audit fix` (no overrides, no
+audit-level change) made no lockfile changes: the project already pins undici
+8.13.1 and brace-expansion 5.0.13. The backend runtime now uses
+`node:26.13.1-alpine3.24` with npm removed from the final image (build-time
+only), so npm-bundled advisories no longer ship. A Trivy 0.76.2 scan of the
+images reports 0 HIGH and 0 CRITICAL findings; the web and dashboard SPAs also
+scan clean after `apk upgrade`. No override or floating base tag was added.
 
 ## Stack
 
@@ -75,7 +72,7 @@ reverse proxy terminates TLS and maps real public ports.
 ### Test suites
 
 ```bash
-npm run test-unit                       # 171 passed, 9 skipped
+npm run test-unit                       # 181 passed, 29 skipped (210 total)
 npm run test-integration                # 17 skipped without DATABASE_URL
 npm run test-e2e                        # 3 passed (typed API contract)
 npm run test-cov -- --coverage.reporter=text --coverage.reporter=json-summary
@@ -85,7 +82,7 @@ npm run build                           # all workspaces
 ```
 
 Integration tests require `DATABASE_URL` and skip otherwise. With it set, the
-P6 verification ran 15/15 real-Postgres integration tests.
+integration suites pass 20/20 against a real Postgres.
 
 ### Coverage and baseline
 

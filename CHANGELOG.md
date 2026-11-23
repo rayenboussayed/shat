@@ -2,7 +2,7 @@
 
 All notable changes to SHAT (spec v1.0-draft, §14) are recorded here, one
 entry per subtask. Date format: `YYYY-MM-DD`. Build-phase subtasks use the
-`P<n>` ids from `.agent-swarm/STATE.md`.
+`P<n>` ids used in the Build phase section below.
 
 ## S1 — scaffold — 2026-11-21
 
@@ -26,8 +26,7 @@ entry per subtask. Date format: `YYYY-MM-DD`. Build-phase subtasks use the
   ADR index (`docs/adr/README.md`) points to the required-ADR list in
   `docs/adr/required-adrs.md` (spec §14.1); `@vitest/coverage-v8@5.1.1`
   added to devDependencies.
-- `README.md` (spec overview and development quickstart),
-  `TASKS.md`-style journal moved to `.agent-swarm/STATE.md`.
+- `README.md` (spec overview and development quickstart).
 
 ## Build phase (P0–P13)
 
@@ -65,8 +64,8 @@ entry per subtask. Date format: `YYYY-MM-DD`. Build-phase subtasks use the
   controller, Paper chat screen and transport/call/crypto contracts with
   unverified fail-closed adapters.
 - **P13 — 2026-11-22** (`3ad1431`): Multi-stage non-root Dockerfiles and
-  dev/prod Compose with real smoke verification; image sizes backend 416 MB,
-  web 95.6 MB, dashboard 95.4 MB.
+  dev/prod Compose with real smoke verification; image sizes backend 328 MB,
+  web 106 MB, dashboard 106 MB.
 
 ## Accepted findings and caveats
 
