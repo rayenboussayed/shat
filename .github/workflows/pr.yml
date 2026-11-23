@@ -89,6 +89,14 @@ jobs:
       - name: End-to-end tests
         run: npm run test-e2e
 
+      # Browser specs need a Chromium with its OS libraries. ubuntu-latest has
+      # apt available, so --with-deps installs what the agent container cannot.
+      - name: Install Chromium for browser e2e
+        run: npx playwright install --with-deps chromium
+
+      - name: Browser end-to-end tests
+        run: npm run test-e2e:browser
+
       - name: Coverage
         run: npm run test-cov -- --coverage.reporter=text --coverage.reporter=json-summary
 

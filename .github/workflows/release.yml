@@ -172,6 +172,7 @@ jobs:
     permissions:
       contents: read
     env:
+      SHAT_REGISTRY: ${{ vars.SHAT_REGISTRY || format('ghcr.io/{0}/', github.repository_owner) }}
       RELEASE_REF: ${{ github.ref_name }}
       RELEASE_SHA: ${{ github.sha }}
     steps:

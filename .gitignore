@@ -20,6 +20,9 @@ credentials.json
 *.p12
 *.mobileprovision
 *.p8
+*.pem
+*.key
+*.pfx
 
 # Local native build outputs
 *.apk
