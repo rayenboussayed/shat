@@ -3,6 +3,9 @@ import { describe, expect, it } from "vitest";
 import { DatabaseService } from "../../src/db/db.ts";
 import { AuthService } from "../../src/identity/auth.service.ts";
 
+/** Same 5% tolerance used by the perf throughput gate. */
+const HEAP_RATIO_TOLERANCE = 0.95;
+
 /** Returns true when an explicit GC cycle can be forced. */
 function canCollect(): boolean {
   return typeof global.gc === "function";
@@ -28,6 +31,9 @@ describe("AuthService memory", () => {
     expect(decoded?.byteLength).toBe(32);
     if (canCollect()) {
       expect(after - before).toBeLessThan(32 * 1024 * 1024);
+      // Relative ratio against the committed cap, with the same 5% tolerance
+      // as the perf gate: retained growth must stay inside the 0.95 band.
+      expect((after - before) / (32 * 1024 * 1024)).toBeLessThanOrEqual(HEAP_RATIO_TOLERANCE);
     }
   });
 
@@ -45,6 +51,7 @@ describe("AuthService memory", () => {
     expect(lastHash?.byteLength).toBe(32);
     if (canCollect()) {
       expect(after - before).toBeLessThan(4 * 1024 * 1024);
+      expect((after - before) / (4 * 1024 * 1024)).toBeLessThanOrEqual(HEAP_RATIO_TOLERANCE);
     }
   });
 });
