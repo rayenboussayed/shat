@@ -1,7 +1,7 @@
-import { createElement, useEffect, useState } from "react";
-import type { LoadState } from "shat-api-types";
+import { createElement } from "react";
 import { isConversationListResponse } from "shat-api-types";
 import { api } from "../lib/api.ts";
+import { useApiGet } from "../lib/use-api-get.ts";
 import * as stylex from "@stylexjs/stylex";
 import { tokens } from "../styles/tokens.stylex.ts";
 
@@ -23,49 +23,33 @@ const styles = stylex.create({
 });
 
 /**
+ * Issues the conversation-list GET with the hook-managed abort signal.
+ *
+ * @param signal - Signal aborted when the list unmounts.
+ * @returns The typed client response.
+ */
+function requestConversations(signal: AbortSignal) {
+  return api.GET("/conversations", { signal });
+}
+
+/**
+ * Validates and maps a conversation-list body to the rendered id list.
+ *
+ * @param raw - The untrusted response body.
+ * @returns The conversation ids, or an empty list when the body is malformed.
+ */
+function mapConversations(raw: unknown): readonly string[] {
+  const payload = isConversationListResponse(raw) ? raw : undefined;
+  return (payload?.conversations ?? []).map((conversation) => conversation.id);
+}
+
+/**
  * Fetches and renders the conversation list from GET /conversations.
  *
  * @returns The rendered conversation list with loading and empty states.
  */
 export function ConversationList() {
-  const [state, setState] = useState<LoadState>("loading");
-  const [items, setItems] = useState<readonly string[]>([]);
-
-  useEffect(() => {
-    const controller = new AbortController();
-    void (async () => {
-      try {
-        const { data, error } = await api.GET("/conversations", {
-          signal: controller.signal,
-        });
-        if (controller.signal.aborted) {
-          return;
-        }
-        if (error !== undefined || data === undefined) {
-          if (!controller.signal.aborted) {
-            setState("error");
-          }
-          return;
-        }
-        const raw: unknown = data;
-        const payload = isConversationListResponse(raw) ? raw : undefined;
-        if (controller.signal.aborted) {
-          return;
-        }
-        if (!controller.signal.aborted) {
-          setItems((payload?.conversations ?? []).map((conversation) => conversation.id));
-          setState("ready");
-        }
-      } catch {
-        if (!controller.signal.aborted) {
-          setState("error");
-        }
-      }
-    })();
-    return () => {
-      controller.abort();
-    };
-  }, []);
+  const { state, value } = useApiGet(requestConversations, mapConversations);
 
   if (state === "loading") {
     return createElement("p", { role: "status" }, "Loading conversations…");
@@ -73,13 +57,13 @@ export function ConversationList() {
   if (state === "error") {
     return createElement("p", { role: "alert" }, "Could not load conversations.");
   }
-  if (items.length === 0) {
+  if (value === undefined || value.length === 0) {
     return createElement("p", { role: "status" }, "No conversations yet.");
   }
   return createElement(
     "ul",
     { ...stylex.props(styles.list), "aria-label": "Conversations" },
-    ...items.map((id) =>
+    ...value.map((id) =>
       createElement("li", { ...stylex.props(styles.item), key: id }, id),
     ),
   );
