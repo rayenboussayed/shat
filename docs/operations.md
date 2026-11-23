@@ -79,6 +79,32 @@ SHAT_IMAGE_TAG=sha-<git-sha> SHAT_REGISTRY=<registry-ns/> \
 make health                            # scripts/health-check.sh against /health
 ```
 
+## Release
+
+Releases use GitHub only. Push an annotated, signed `v*` tag to trigger
+`.github/workflows/release.yml`. The workflow publishes `shat-backend`,
+`shat-web` and `shat-dashboard` to GHCR with an immutable `sha-<commit>` tag and
+no `latest`. No Play Store or App Store submission is made, no AAB is built, and
+no GitHub Release object is created because there is no gh token here. iOS cannot
+be built on Linux, so no iOS artifact is produced. The mobile Maestro flows are
+authored and statically reviewed but not executed locally.
+
+To verify a release locally, build first, then run the e2e suites:
+
+```bash
+npm run build              # required: backend e2e and Playwright both start dist/apps/backend/src/main.js
+npm run test-e2e           # backend typed API contract (vitest e2e)
+npm run test-e2e:browser   # Playwright web + dashboard specs in Chromium
+```
+
+Chromium cannot launch in this build container because `libnspr4.so` is missing
+and the apt lists are not writable, so the browser specs are authored and listed
+but not executed locally. The backend e2e suite does run locally.
+
+The local Android release APK is
+`apps/mobile/android/app/build/outputs/apk/release/app-release.apk`, signed with
+a self-signed key the operator generates and keeps outside the repository.
+
 ## Database and backups
 
 - Migrations are generated with `make gen:migrations` and applied with
@@ -110,6 +136,13 @@ make health                            # scripts/health-check.sh against /health
    stopped Postgres instance before starting the older app image.
 3. Re-run `make health` and the smoke checks (backend `/health`, web and
    dashboard roots) and confirm the tag actually deployed.
+4. Optionally re-run the e2e suites after a rollback: `npm run build` first,
+   then `npm run test-e2e` and `npm run test-e2e:browser`. These suites spawn
+   their own backend from `dist/apps/backend/src/main.js` and stub HTTP
+   responses; they do not contact the redeployed Compose stack. Use
+   `make health` and the smoke checks in step 3 to verify that stack. Chromium
+   cannot launch in this container (missing `libnspr4.so`, apt lists not
+   writable), so the browser specs are authored but not executed locally here.
 
 ## Local mobile builds
 
