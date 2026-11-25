@@ -7,7 +7,8 @@ entry per subtask. Date format: `YYYY-MM-DD`. Build-phase subtasks use the
 ## Release v1.0.0 (2026-11-23)
 
 This is a GitHub-only release. It is published by a signed v1.0.0 git tag,
-which triggers the release workflow. No GitHub Release object is created.
+which triggers the release workflow. The signed APK is the Android asset for
+the `v1.0.0` GitHub Release.
 
 - Container images: the release workflow publishes three images to GHCR under
   immutable `sha-<commit>` tags (`SHAT_IMAGE_TAG=sha-<commit>`): `shat-backend`,
@@ -23,12 +24,11 @@ which triggers the release workflow. No GitHub Release object is created.
   launch here because Chromium lacks libnspr4.so and the container cannot
   install system packages. The Maestro flows are authored but not executed
   here, since running them needs Expo authentication and an emulator.
-- iOS was not built. The iOS target is configured in app.json, but no iOS binary
-  was produced. An iOS build needs macOS and Xcode, which are not available in
-  this environment.
-- Distribution limits: there is no Google Play submission, no Apple App Store
-  submission and no GitHub Release object. Publication is the pushed signed tag
-  and the GHCR images produced by the release workflow.
+- iOS is out of scope. No iOS binary is published for this release.
+- Distribution limits: there is no Google Play or Apple App Store submission and
+  no AAB. Publication is the pushed signed tag, the GHCR images produced by the
+  release workflow, and the signed APK published as the `v1.0.0` GitHub Release
+  asset.
 
 ## S1 — scaffold — 2026-11-21
 

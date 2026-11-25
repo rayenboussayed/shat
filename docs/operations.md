@@ -85,9 +85,12 @@ Releases use GitHub only. Push an annotated, signed `v*` tag to trigger
 `.github/workflows/release.yml`. The workflow publishes `shat-backend`,
 `shat-web` and `shat-dashboard` to GHCR with an immutable `sha-<commit>` tag and
 no `latest`. No Play Store or App Store submission is made, no AAB is built, and
-no GitHub Release object is created because there is no gh token here. iOS cannot
-be built on Linux, so no iOS artifact is produced. The mobile Maestro flows are
-authored and statically reviewed but not executed locally.
+iOS is out of scope, so no iOS artifact is produced. The signed Android release
+APK is the Android asset for the `v1.0.0` GitHub Release; attach it with the
+command in the README.
+Creating that release needs a gh token with repository access; the workflow
+publishes only container images. The mobile Maestro flows are authored and
+statically reviewed but not executed locally.
 
 To verify a release locally, build first, then run the e2e suites:
 
